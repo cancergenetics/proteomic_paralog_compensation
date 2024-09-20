@@ -127,7 +127,7 @@ def main():
 
     if args.HAP1_overlap == False:
         overlap_df_output.to_csv(f'../output/output_CPTAC/{args.runwith}/categorical_overlaps_{args.runwith}.csv')
-        #FETs_genepair.to_csv(f'../output/output_CPTAC/{args.runwith}_/categorical_FETs_directionalgenepairs_{args.runwith}.csv') #Only used for reciprocal comp/CL pval 
+        #FETs_genepair.to_csv(f'../output/output_CPTAC/{args.runwith}_/categorical_FETs_directionalgenepairs_{args.runwith}.csv') 
         FETs_sortedgenepair.to_csv(f'../output/output_CPTAC/{args.runwith}/categorical_FETs_uniquegenepairs_{args.runwith}.csv')
 
         if args.runwith == 'prot':

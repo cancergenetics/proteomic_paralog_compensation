@@ -34,6 +34,12 @@ def load_and_process_data(runwith):
         data_df = pd.read_parquet(data_path)
     elif 'csv' in data_path:
         data_df = pd.read_csv(data_path, index_col=0, low_memory=False)
+
+    if runwith == 'prot_residual':
+        data_df = data_df[['gene_in_sample', 'Residuals']]
+        data_df[['gene', 'sample']] = data_df['gene_in_sample'].str.split('_in_', n=1, expand=True)
+        data_df = data_df.pivot(index='sample', columns='gene', values='Residuals')
+    
     print(f'Data df starts at {data_df.shape}')
     print('Loading in copy number data...')
     cndf = pd.read_csv(cn_path)
@@ -47,8 +53,8 @@ def load_and_process_data(runwith):
 
     # Keeping genes and samples with copy number data
     data_df.columns.name = ''
-    data_df.index_name = 'sample_ID'
-    print(sample_info.columns)
+    data_df.index.name = 'sample_ID'
+    #print(data_df.head())
     data_df = data_df[data_df.index.isin(sample_info[sample_info.lineage == 'OvCa 2020'].sample_ID.to_list()) == False]
     cndf = cndf.melt(id_vars='gene_name').rename(
         columns={'variable': 'sample_ID', 'value': 'CNV'}
@@ -66,8 +72,6 @@ def load_and_process_data(runwith):
     common_genes = list(np.intersect1d(cndf.gene_name.to_list(), data_df.columns.to_list()))
     data_df = data_df[data_df.index.isin(common_samples)][common_genes]
     cndf = cndf[(cndf.sample_ID.isin(common_samples)) & (cndf.gene_name.isin(common_genes))]
-
-    print(f'Dropping NAs- data df now {data_df.shape}')
 
      # We need the rest of these to calculate overlaps 
 

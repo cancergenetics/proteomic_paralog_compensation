@@ -36,8 +36,9 @@ def get_pairs_to_test(pairs, runwith, cndf, only_run_HAP1_pairs=False,
         f'No sex chromosome genes': len(pairs_to_return)
     }
     
-    if only_run_HAP1_pairs:
-        HAP1_results = pd.read_csv('../output/HAP1/HAP1_paralogtest_results.csv')
+    if only_run_HAP1_pairs == True:
+        print(f'The value of only_run_HAP1_pairs was {only_run_HAP1_pairs} so we are filtering here')
+        HAP1_results = pd.read_csv('../../output/output_HAP1/HAP1_paralogtest_results.csv')
         pairs_to_return = pairs_to_return[
             pairs_to_return.gene_pair.isin(HAP1_results.gene_pair.to_list())
         ]
