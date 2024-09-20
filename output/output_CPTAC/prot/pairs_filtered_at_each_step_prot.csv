@@ -1,0 +1,16 @@
+,Step,Pairs remaining
+0,All pairs,83404.0
+1,Pairs with prot and copy num data,17644.0
+2,Min seq ID >= 0.2,10236.0
+3,Max fam size <= 20,10206.0
+4,A1 and A2 on different chromosomes,8806.0
+5,No sex chromosome genes,8168.0
+6,Pairs where A2 is lost at least 20 times,7298.0
+7,Tested A2s,3116.0
+8,A2s whose loss results in a drop in A2 protein,2249.0
+9,Paralog pairs tested in the regression,4568.0
+10,"Compensation pairs (FDR<0.05, pval<0.05)",568.0
+11,"Collateral loss pairs (FDR<0.05, pval<0.05)",449.0
+12,No significant effect,3551.0
+13,Compensation percentage,12.4
+14,Collateral loss percentage,9.8
