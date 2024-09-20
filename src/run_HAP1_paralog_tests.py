@@ -150,7 +150,7 @@ def run_ttest_for_paralog(genepair, A2_df_input, A2_df_input_agg, df):
 
 
 def main():
-    filename_input = './data/HAP1/proteinGroups_rerunaug.txt'
+    filename_input = '../data/HAP1/proteinGroups_rerunaug.txt'
     uniprot_to_symbol = {}
     uniprot_to_entrez = {}
     with open("./data/general/geneidmap_sep24.txt", 'r') as f:
@@ -210,7 +210,7 @@ def main():
     A2_df_agg = group_A2_clones(A2_df)
     valKOs = A2_df_agg[A2_df_agg.sig == True].A2.to_list()
 
-    all_pairs = pd.read_csv('./data/general/all_pairs_wsexchr.csv', index_col=0)
+    all_pairs = pd.read_csv('../data/general/all_pairs_wsexchr.csv', index_col=0)
     all_pairs = all_pairs[all_pairs.sex_chr == False] # Excluding sex chromosome paralogs- but none are testable in this analysis anyway 
 
     val_paralogs = {}
@@ -235,12 +235,12 @@ def main():
     print(f'Collateral loss hits:\n{",".join(A1A2_df[A1A2_df.collateral_loss].gene_pair.to_list())}')
 
     # Save datasets
-    A2_df.to_csv('./output/HAP1/HAP1_selftest_results.csv')
-    A1A2_df.to_csv('./output/HAP1/HAP1_paralogtest_results.csv')
+    A2_df.to_csv('../output/HAP1/HAP1_selftest_results.csv')
+    A1A2_df.to_csv('../output/HAP1/HAP1_paralogtest_results.csv')
 
     HAP1_prot_renamed.index.name = 'gene_name'
     HAP1_prot_renamed.columns.name = ''
-    HAP1_prot_renamed.to_csv('./output/HAP1/HAP1_prot_renamed.csv')
+    HAP1_prot_renamed.to_csv('../output/HAP1/HAP1_prot_renamed.csv')
 
 
 if __name__ == "__main__":
