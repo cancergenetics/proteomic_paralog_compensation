@@ -1,0 +1,12 @@
+# Python >= 3.8 required
+
+numpy==1.24.4
+pandas==2.0.3
+pandarallel==1.6.5
+tqdm==4.66.4
+statsmodels==0.14.1
+scipy==1.10.1
+networkx==3.1
+matplotlib==3.7.4
+seaborn==0.13.2
+matplotlib-venn==0.13
