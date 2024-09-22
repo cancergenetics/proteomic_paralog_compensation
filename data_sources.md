@@ -10,7 +10,7 @@
 
 5. Annotations of gene loss in DepMap cancer cell lines (A2_lost_essentiality.csv) made as outlined in De Kegel 2021 (https://www.sciencedirect.com/science/article/pii/S240547122100329X)
 
-6. BIOGRID database accessed from https://downloads.thebiogrid.org/BioGRID/Release-Archive/BIOGRID-4.4.236/ (Version 4.4.236).
+6. BioGRID database accessed from https://downloads.thebiogrid.org/BioGRID/Release-Archive/BIOGRID-4.4.236/ (Version 4.4.236).
 
 7. CORUM version 4.1 accessed from https://mips.helmholtz-muenchen.de/corum/download
 
