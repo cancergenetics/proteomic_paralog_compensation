@@ -9,7 +9,7 @@ def run_test(pair, lost, quants, lin, how, cn_df, runwith):
     Fits a linear model to explain the abundance of one protein with the loss status of a gene 
     (either its own gene i.e. A2-A2 tests or another i.e paralogous gene, A1-A2). 
     """
-    indlist = ['gene_pair', 'A1', 'A2', 'ols_p', 'ols_coef', 'n_A2_lost', 'A2_lost_mean_quant_A1', 'A2_other_mean_quant_A1']
+    indlist = ['gene_pair', 'A1', 'A2', 'ols_p', 'ols_coef', 'n_A2_lost', 'lost_mean_quant', 'other_mean_quant']
     
     # Always include gene pair information
     result = pd.Series([pair.gene_pair, pair.A1, pair.A2] + [np.nan] * 5, index=indlist)

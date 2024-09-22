@@ -32,7 +32,7 @@ def main():
 
     if args.runwith in ['trans', 'prot_residual']:
         try:
-            prot_results = pd.read_csv('../output/output_CPTAC/paralog_tests_prot.csv')
+            prot_results = pd.read_csv('../output/output_CPTAC/prot/paralog_tests_prot.csv')
             pairs_to_test_processed_backed = prot_results[['gene_pair', 'A1', 'A2', 'n_A2_lost']]
         except FileNotFoundError:
             print("Run the analysis with proteomic data first as only these pairs are tested "
@@ -44,8 +44,6 @@ def main():
             lost=A2_lost,
             filtering_dict=filtering_dict
         )
-        pairs_to_test_processed.to_csv('./pairs.csv')
-        print('saved it')
         res_raw_A2 = run_tests_for_df(
             how='A2',
             workers=int(args.nb_workers),

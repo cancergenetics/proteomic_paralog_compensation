@@ -2,6 +2,8 @@ import numpy as np
 import pandas as pd
 import scipy.stats as stats
 from statsmodels.stats.multitest import multipletests
+from data_preprocessing import load_and_process_data
+from generate_overlaps import generate_overlaps
 from copy import deepcopy
 import csv
 
@@ -150,10 +152,13 @@ def run_ttest_for_paralog(genepair, A2_df_input, A2_df_input_agg, df):
 
 
 def main():
+
+    print('Processing HAP1 proteomic data and running tests...')
+
     filename_input = '../data/HAP1/proteinGroups_rerunaug.txt'
     uniprot_to_symbol = {}
     uniprot_to_entrez = {}
-    with open("./data/general/geneidmap_sep24.txt", 'r') as f:
+    with open("../data/general/geneidmap_sep24.txt", 'r') as f:
         reader = csv.DictReader(f, delimiter="\t")
         for r in reader:
             if r['Approved symbol'] and r['UniProt ID(supplied by UniProt)']:
@@ -169,7 +174,7 @@ def main():
         'LFQ intensity ARFGAP2_KO_3', 'LFQ intensity ARID1A_c010_KO_2',
         'LFQ intensity ARID1A_c010_KO_3', 'LFQ intensity ARID1B_KO_1',
         'LFQ intensity ARID1B_KO_2', 'LFQ intensity DDX5_KO_4'
-    ]
+     ] # Problem running these, technical replicates run in their place
 
     hap1_processed = process_proteomics_data(
         filename_input, dropped_samples=dropped_samples,
@@ -182,7 +187,6 @@ def main():
     hap1_short = hap1_short.reset_index().rename(columns={"GeneNames": "gene_name"}).set_index("gene_name").rename(columns=lambda x: drop_lfq(x))
 
     HAP1_prot_renamed = hap1_short.rename(columns={'ARID1B_12': 'ARID1B_2'})
-    print(HAP1_prot_renamed.head())
 
     all_clones = list(set(['_'.join(x.split('_')[0:-1]) for x in HAP1_prot_renamed.columns.to_list() if 'WT_' not in x]))
     all_clones = [x for x in all_clones if 'ASF1' not in x]
@@ -192,7 +196,8 @@ def main():
     A2_df['p_val'] = A2_df.A2.apply(lambda x: run_ttest_for_clone(x, df=HAP1_prot_renamed)[1])
     A2_df = A2_df.dropna(subset='p_val')
     A2_df['p_values_adjusted'] = multipletests(A2_df['p_val'], method='fdr_bh')[1]
-    A2_df['sig'] = (A2_df['p_val'] < 0.05) & (A2_df['t_stat'] < 0) 
+    A2_df['sig'] = (A2_df['p_val'] < 0.05) & (A2_df['t_stat'] < 0)
+
     data_A2 = {}
     for A2 in A2_df.A2.to_list():
         A2_noclone = A2.split('_')[0] # In case we have a clone ID appended to the gene name as we do when we have multiple viable clones
@@ -206,9 +211,10 @@ def main():
         data_A2[A2] = KO_quants, WT_quants
 
     A2_df['logFC'] = A2_df['A2'].apply(lambda key: calculate_logFC(data_A2, key))
-    print(A2_df.head())
-    A2_df_agg = group_A2_clones(A2_df)
-    valKOs = A2_df_agg[A2_df_agg.sig == True].A2.to_list()
+    A2_df_wclones = deepcopy(A2_df)
+    A2_df = group_A2_clones(A2_df)
+    A2_df['logFC'] = A2_df['logFC'].apply(lambda x: round(x, 3))
+    valKOs = A2_df[A2_df.sig == True].A2.to_list()
 
     all_pairs = pd.read_csv('../data/general/all_pairs_wsexchr.csv', index_col=0)
     all_pairs = all_pairs[all_pairs.sex_chr == False] # Excluding sex chromosome paralogs- but none are testable in this analysis anyway 
@@ -220,12 +226,33 @@ def main():
     pairs_to_test = [f'{x}_{k}' for k, v in val_paralogs.items() for x in v]
 
     A1A2_df = pd.DataFrame(pairs_to_test).rename(columns={0: 'gene_pair'})
-    A1A2_df['t_stat'] = A1A2_df.gene_pair.apply(lambda x: run_ttest_for_paralog(x, df=HAP1_prot_renamed, A2_df_input=A2_df, A2_df_input_agg=A2_df_agg)[0])
-    A1A2_df['p_val'] = A1A2_df.gene_pair.apply(lambda x: run_ttest_for_paralog(x, df=HAP1_prot_renamed, A2_df_input=A2_df, A2_df_input_agg=A2_df_agg)[1])
+    A1A2_df['t_stat'] = A1A2_df.gene_pair.apply(lambda x: run_ttest_for_paralog(x, df=HAP1_prot_renamed, A2_df_input=A2_df_wclones, A2_df_input_agg=A2_df)[0])
+    A1A2_df['p_val'] = A1A2_df.gene_pair.apply(lambda x: run_ttest_for_paralog(x, df=HAP1_prot_renamed, A2_df_input=A2_df_wclones, A2_df_input_agg=A2_df)[1])
     A1A2_df = A1A2_df.dropna(subset='p_val')
     A1A2_df['p_values_adjusted'] = multipletests(A1A2_df['p_val'], method='fdr_bh')[1]
     A1A2_df['compensation'] = (A1A2_df['p_values_adjusted'] < 0.05) & (A1A2_df['p_val'] < 0.05) & (A1A2_df['t_stat'] > 0)
     A1A2_df['collateral_loss'] = (A1A2_df['p_values_adjusted'] < 0.05) & (A1A2_df['p_val'] < 0.05) & (A1A2_df['t_stat'] < 0)
+    
+    data = {}
+    for pair in A1A2_df.gene_pair.to_list():
+        splitlist = pair.split('_')
+        A1 = splitlist[0]
+        if len(splitlist) == 2:
+            A2 = splitlist[1]
+        elif len(splitlist) == 3:
+            A2 = splitlist[1] + '_' + splitlist[2]
+        genelist = [x for x in HAP1_prot_renamed.index.to_list() if ((f';{A1}' in x) or (f'{A1};' in x) or (x == A1))]
+        if len(genelist)>0:
+            gene_index = genelist[0]
+        KO_samples = [x for x in HAP1_prot_renamed.columns.to_list() if A2 in x]
+        KO_quants = HAP1_prot_renamed[(HAP1_prot_renamed.index == gene_index)][KO_samples].iloc[0].values.tolist()
+        WT_quants = HAP1_prot_renamed[(HAP1_prot_renamed.index == gene_index)][[x for x in HAP1_prot_renamed.columns.to_list() if 'WT_' in x]].iloc[0].values.tolist()
+        KO_quants = [x for x in KO_quants if np.isnan(x) == False]
+        WT_quants = [x for x in WT_quants if np.isnan(x) == False]
+        data[pair] = KO_quants, WT_quants
+        A1A2_df['logFC'] = A1A2_df['gene_pair'].apply(lambda key: calculate_logFC(data, key))
+        A1A2_df['logFC'] = A1A2_df['logFC'].round(3)
+
     A1A2_df['logFC'] = A1A2_df['gene_pair'].apply(lambda key: calculate_logFC(data, key))
 
     print(f'Final processed HAP1 proteomics dataset has {HAP1_prot_renamed.shape[0]} proteins and {HAP1_prot_renamed.shape[1]} unique samples incl WTs.')
@@ -234,14 +261,40 @@ def main():
     print(f'Compensation hits: (Gene pairs are in A1_A2 format where A2 is lost and A1 is the paralog)\n{",".join(A1A2_df[A1A2_df.compensation].gene_pair.to_list())}')
     print(f'Collateral loss hits:\n{",".join(A1A2_df[A1A2_df.collateral_loss].gene_pair.to_list())}')
 
+    # Load overlap datasets
+    dfs_for_cat_overlap, dfs_for_quant_overlap = load_and_process_data(overlap_only=True)
+
+    # Generate overlaps for HAP1 results
+    hap1_results = A1A2_df.copy()
+    hap1_results['dataset'] = 'HAP1'
+    hap1_results['FDR_threshold'] = 0.05
+    hap1_results['gene_pair'] = hap1_results['gene_pair'].apply(lambda x: '_'.join(x.split('_')[0:2]))
+    hap1_results['A1'] = hap1_results['gene_pair'].apply(lambda x: x.split('_')[0])
+    hap1_results['A2'] = hap1_results['gene_pair'].apply(lambda x: x.split('_')[1])
+    
+    overlap_dfs = generate_overlaps(
+        dfs_for_cat_overlap, 
+        dfs_for_quant_overlap, 
+        hap1_results, 
+        runwith='prot', 
+        workers=1, 
+        skip_tests=True
+    )
+
+    # Unpack the overlap dataframes
+    overlap_df_output, annotated_results = overlap_dfs
+
     # Save datasets
-    A2_df.to_csv('../output/HAP1/HAP1_selftest_results.csv')
-    A1A2_df.to_csv('../output/HAP1/HAP1_paralogtest_results.csv')
+    A2_df.to_csv('../output/output_HAP1/HAP1_selftest_results.csv')
+    A1A2_df.to_csv('../output/output_HAP1/HAP1_paralogtest_results.csv')
 
     HAP1_prot_renamed.index.name = 'gene_name'
     HAP1_prot_renamed.columns.name = ''
-    HAP1_prot_renamed.to_csv('../output/HAP1/HAP1_prot_renamed.csv')
+    HAP1_prot_renamed.to_csv('../output/output_HAP1/HAP1_prot_renamed.csv')
 
+    # Save overlap dataframes
+    overlap_df_output.to_csv('../output/output_HAP1/HAP1_overlaps_categorical.csv')
+    annotated_results.to_csv('../output/output_HAP1/HAP1_tested_pairs_annots.csv')
 
 if __name__ == "__main__":
     main()

@@ -35,7 +35,7 @@ def identify_essential_genes(df, threshold=-0.6, min_percentage=80):
     return essential_genes
 
 
-def run_FET(interaction_dataset, input_dataset, input_hit_type, input_FDR, gene_pair, overlap_df_output):
+def run_FET(interaction_dataset, input_hit_type, gene_pair, overlap_df_output):
     '''
     Uses a generated overlap DF to run a Fishers Exact Test to check enrichment for a biological feature in 
     compensation and collateral loss hits (as compared to non hits)
@@ -44,9 +44,7 @@ def run_FET(interaction_dataset, input_dataset, input_hit_type, input_FDR, gene_
     other_hit_type = both_hit_types[input_hit_type]
     overlap_df_local = deepcopy(overlap_df_output)
     overlap_df_local = overlap_df_local[
-        (overlap_df_local[other_hit_type] == False) &
-        (overlap_df_local.dataset == input_dataset) &
-        (overlap_df_local.FDR_threshold == input_FDR)
+        (overlap_df_local[other_hit_type] == False)
     ][[gene_pair, interaction_dataset, input_hit_type]]
     overlap_df_local = overlap_df_local.dropna(subset=[input_hit_type, interaction_dataset]).drop_duplicates(subset=[gene_pair]).set_index(gene_pair)
     num_pairs_overlap = overlap_df_local.shape[0]
@@ -59,9 +57,7 @@ def run_FET(interaction_dataset, input_dataset, input_hit_type, input_FDR, gene_
     else:
         FET_OR_local, FET_p_local = np.nan, np.nan
     return pd.DataFrame({
-        'prot_dataset': [input_dataset],
         'interaction_dataset': [interaction_dataset],
-        'FDR_threshold': [input_FDR],
         'hit_type': [input_hit_type],
         'common_pairs': [num_pairs_overlap],
         'FET_OR': [FET_OR_local],
@@ -153,10 +149,13 @@ def get_hit_type(comp, cl):
     else:
         return 'non_hit'
 
-def generate_overlaps(dfs_for_cat_overlap, dfs_for_quant_overlap, results, runwith, workers):
+def generate_overlaps(dfs_for_cat_overlap, dfs_for_quant_overlap, results, runwith, workers, skip_tests=False):
     '''
     Given a results dataframe with a set of compensation and collateral loss pairs, identifies overlaps for various 
-    categorical and quantitative biological features of interest using Fishers Exact Tests and Students t-tests
+    categorical and quantitative biological features of interest. Optionally runs Fishers Exact Tests and Students t-tests.
+    
+    Parameters:
+    - skip_tests (bool): If True, skips the Fisher's Exact Test calculations.
     '''
     if workers > 1:
         pandarallel.initialize(nb_workers=workers, progress_bar=False)
@@ -248,33 +247,34 @@ def generate_overlaps(dfs_for_cat_overlap, dfs_for_quant_overlap, results, runwi
         lambda x: f"{x.split('_')[1]}_{x.split('_')[0]}" in all_cl_results 
                   if f"{x.split('_')[1]}_{x.split('_')[0]}" in all_tested else np.nan
     )
-    overlap_df_output['dataset'] = 'pancan'
-    overlap_df_output['FDR_threshold'] = 0.05
     overlap_df_output = overlap_df_output.drop_duplicates(subset='gene_pair')
-    interaction_datasets_list = [
-        'bronze_standard_SL', 'strict_comb_hit', 'lenient_comb_hit', 'in_PC_CORUM',
-        'in_PC_CORUM_essential', 'in_PC_CORUM_both', 'in_PC_EBI', 'in_PC_humap',
-        'closest_pair', 'famsize2', 'other_dir_comp', 'other_dir_cl'
-    ]
-    interaction_datasets_list = [x for x in interaction_datasets_list if x in overlap_df_output.columns]
-    FETs_df_output_gene_pair = pd.DataFrame()
-    FETs_df_output_gene_pair_sorted = pd.DataFrame()
-    for hit_type in ["compensation", "collateral_loss"]:
-        for interaction_dataset in interaction_datasets_list:
-            print(f"Running FET for {hit_type} and {interaction_dataset}...")
-            FETs_df_output_gene_pair = pd.concat([
-                FETs_df_output_gene_pair, 
-                run_FET(interaction_dataset, 'pancan', hit_type, 0.05, 'gene_pair', overlap_df_output)
-            ])
-            FETs_df_output_gene_pair_sorted = pd.concat([
-                FETs_df_output_gene_pair_sorted, 
-                run_FET(interaction_dataset, 'pancan', hit_type, 0.05, 'sorted_gene_pair', overlap_df_output)
-            ])
-    print("Processing FET results...")
-    FETs_df_output_processed_genepair = process_FET(FETs_df_output_gene_pair)
-    FETs_df_output_processed_sortedgenepair = process_FET(FETs_df_output_gene_pair_sorted)
+    
+    output_dfs = [overlap_df_output]
 
-    output_dfs = [overlap_df_output, FETs_df_output_processed_genepair, FETs_df_output_processed_sortedgenepair]
+    if not skip_tests:
+        interaction_datasets_list = [
+            'bronze_standard_SL', 'strict_comb_hit', 'lenient_comb_hit', 'in_PC_CORUM',
+            'in_PC_CORUM_essential', 'in_PC_CORUM_both', 'in_PC_EBI', 'in_PC_humap',
+            'closest_pair', 'famsize2', 'other_dir_comp', 'other_dir_cl'
+        ]
+        interaction_datasets_list = [x for x in interaction_datasets_list if x in overlap_df_output.columns]
+        FETs_df_output_gene_pair = pd.DataFrame()
+        FETs_df_output_gene_pair_sorted = pd.DataFrame()
+        for hit_type in ["compensation", "collateral_loss"]:
+            for interaction_dataset in interaction_datasets_list:
+                print(f"Running FET for {hit_type} and {interaction_dataset}...")
+                FETs_df_output_gene_pair = pd.concat([
+                    FETs_df_output_gene_pair, 
+                    run_FET(interaction_dataset, hit_type, 'gene_pair', overlap_df_output)
+                ])
+                FETs_df_output_gene_pair_sorted = pd.concat([
+                    FETs_df_output_gene_pair_sorted, 
+                    run_FET(interaction_dataset, hit_type, 'sorted_gene_pair', overlap_df_output)
+                ])
+        print("Processing FET results...")
+        FETs_df_output_processed_genepair = process_FET(FETs_df_output_gene_pair)
+        FETs_df_output_processed_sortedgenepair = process_FET(FETs_df_output_gene_pair_sorted)
+        output_dfs += [FETs_df_output_processed_genepair, FETs_df_output_processed_sortedgenepair]
 
     if runwith == 'prot':
         print("Constructing network from STRING...")
@@ -334,24 +334,29 @@ def generate_overlaps(dfs_for_cat_overlap, dfs_for_quant_overlap, results, runwi
             lambda x: get_hit_type(x['compensation'], x['collateral_loss']), 
             axis=1
         )
-        print("Running multiple t-tests...")
-        results_ttests_nodrop = multiple_ttests_with_correction(
-            annotated_results,
-            ['string_jaccard_physical', 'bg_jaccard', 'conservation_score', 
-             'A2_median_neighbour_ess', 'string_dc_physical', 'biogrid_dc', 
-             'sequence_identity', 'family_size']
-        )
-        namedict = {
-            'A2_median_neighbour_ess': 'Median lost gene neighbour essentiality',
-            'bg_jaccard': 'Biogrid Jaccard index',
-            'biogrid_dc': 'Biogrid degree centrality',
-            'conservation_score': 'Conservation score',
-            'family_size': 'Family size',
-            'sequence_identity': 'Sequence identity',
-            'string_dc_physical': 'STRING physical degree centrality',
-            'string_jaccard_physical': 'STRING physical Jaccard index',
-        }
-        results_ttests_nodrop['Variable'] = results_ttests_nodrop['colname'].apply(lambda x: namedict[x])
-        output_dfs += [results_ttests_nodrop, annotated_results]
+        
+        if not skip_tests:
+            print("Running multiple t-tests...")
+            results_ttests_nodrop = multiple_ttests_with_correction(
+                annotated_results,
+                ['string_jaccard_physical', 'bg_jaccard', 'conservation_score', 
+                 'A2_median_neighbour_ess', 'string_dc_physical', 'biogrid_dc', 
+                 'sequence_identity', 'family_size']
+            )
+            namedict = {
+                'A2_median_neighbour_ess': 'Median lost gene neighbour essentiality',
+                'bg_jaccard': 'Biogrid Jaccard index',
+                'biogrid_dc': 'Biogrid degree centrality',
+                'conservation_score': 'Conservation score',
+                'family_size': 'Family size',
+                'sequence_identity': 'Sequence identity',
+                'string_dc_physical': 'STRING physical degree centrality',
+                'string_jaccard_physical': 'STRING physical Jaccard index',
+            }
+            results_ttests_nodrop['Variable'] = results_ttests_nodrop['colname'].apply(lambda x: namedict[x])
+            output_dfs.append(results_ttests_nodrop)
+        
+        output_dfs.append(annotated_results)
+    
     print("Overlap calculation completed.")
     return output_dfs
