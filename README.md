@@ -22,7 +22,7 @@ Data sources are listed in data_sources.txt.
 - **Script**: `./src/create_residuals.py`
 - **Description**: Generates protein residuals (residuals of linear models predicting study/lineage-corrected protein abundance with study/lineage-corrected mRNA abundance).
 - **Output**: Prot residual dataset and additional/intermediate residual datasets used for plotting.
-- **Uses parallel processing by default; may be memory intensive.**
+- **Can speed up with parallel processing.**
 
 ### 3. CPTAC paralog compensation analysis
 
@@ -44,8 +44,6 @@ Data sources are listed in data_sources.txt.
   - Transcriptomic and residual analyses are only run on pairs testable with the proteomic dataset
   - Proteomic results must be in their respective directory for these options to work.
   - HAP1 output needs to be present for the `--HAP1_overlap` option to work.
-  - Main results dataframes are already present in the results folder.
-  - Supplementary table 7 (biological annotations for HAP1 pairs) is generated using the same data/code as used for CPTAC in generate_overlaps.py.
 
 ### 4. Visualization
 
@@ -55,4 +53,12 @@ Data sources are listed in data_sources.txt.
   - P-values for ubiquitination enrichment
   - Enrichment of transcriptional hits in proteomic hits
 - **Default Output Directory**: `./output/figures`
+
+### 5. Generate supplementary tables 
+
+- **Script**: `clean_and_format_supptables.py` 
+- **Description**: Processes results outputted by scripts to generate supplementary tables of the paper.
+- **Default Output Directory**: `./output/supp_tables`
+
+
 
