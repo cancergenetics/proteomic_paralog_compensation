@@ -1,3 +1,5 @@
+# Data Sources
+
 1. CPTAC data- Proteomic, transcriptomic, and copy number datasets accessed from https://pdc.cancer.gov/pdc/cptac-pancancer (Proteome_BCM_GENCODE_v34_harmonized_v1.zip- all tumour datasets concatenated and Ensembl IDs mapped to gene symbols using HUGO mapping (https://www.genenames.org/download/custom/. Gene-level RNAseq files from tumour datasets and gene-level GISTIC copy number calls for tumor datasets).
 
 2. Paralog pairs from Ensembl 93 (https://ftp.ensembl.org/pub/release-93/) annotated with sequence identity as described in De Kegel et al 2019 (https://journals.plos.org/plosgenetics/article?id=10.1371/journal.pgen.1008466). Chromosome annotations from HUGO (https://www.genenames.org/download/custom/).

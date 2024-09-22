@@ -4,7 +4,7 @@ This repository contains code to analyze proteomic data and associate gene losse
 
 ## Input data
 
-Data sources are listed in data_sources.txt.
+Data sources are listed in data_sources.md.
 
 ## Analysis pipeline
 
