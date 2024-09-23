@@ -131,10 +131,13 @@ def multiple_ttests_with_correction(df, colnames):
             'cl_vs_non_pvalue': cl_non.pvalue
         })
     results_df = pd.DataFrame(results)
-    pvalues = results_df[['comp_vs_non_pvalue', 'cl_vs_non_pvalue']].values.flatten()
-    _, corrected_pvalues = fdrcorrection(pvalues)
-    results_df['comp_vs_non_FDR'] = corrected_pvalues[0::2]
-    results_df['cl_vs_non_FDR'] = corrected_pvalues[1::2]
+    
+    _, comp_corrected_pvalues = fdrcorrection(results_df['comp_vs_non_pvalue'])
+    _, cl_corrected_pvalues = fdrcorrection(results_df['cl_vs_non_pvalue'])
+    
+    results_df['comp_vs_non_FDR'] = comp_corrected_pvalues
+    results_df['cl_vs_non_FDR'] = cl_corrected_pvalues
+    
     return results_df
 
 def get_hit_type(comp, cl):
@@ -168,7 +171,7 @@ def generate_overlaps(dfs_for_cat_overlap, dfs_for_quant_overlap, results, runwi
     bronze_standard_SLs = set(CRISPR_compensation[CRISPR_compensation.SL == True].sorted_gene_pair)
     bronze_standard_tested_pairs = set(CRISPR_compensation.sorted_gene_pair)
     strict_comb_SLs = set(all_screened_pairs[all_screened_pairs.strict_comb_hit].sorted_gene_pair)
-    strict_comb_pairs_tested = set(all_screened_pairs.sorted_gene_pair)
+    strict_comb_pairs_tested = set(all_screened_pairs[all_screened_pairs.n_screens_tested > 1].sorted_gene_pair)
     lenient_comb_SLs = set(all_screened_pairs[all_screened_pairs.lenient_comb_hit].sorted_gene_pair)
     lenient_comb_pairs_tested = set(all_screened_pairs.sorted_gene_pair)
 
@@ -224,10 +227,13 @@ def generate_overlaps(dfs_for_cat_overlap, dfs_for_quant_overlap, results, runwi
         overlap_df_output["sorted_gene_pair"],
         lambda x: any(gene in proteins_in_humap2 for gene in x.split("_"))
     )
+    all_unique_pairs.reset_index(inplace = True)
     print("Mapping closest_pair...")
-    overlap_df_output["closest_pair"] = overlap_df_output["sorted_gene_pair"].map(all_unique_pairs.closest)
+    overlap_df_output = overlap_df_output.merge(all_unique_pairs[["sorted_gene_pair", "closest"]], on = 'sorted_gene_pair', how = 'left').rename(
+        columns = {'closest':'closest_pair'})
     print("Mapping famsize2...")
-    overlap_df_output["famsize2"] = overlap_df_output['sorted_gene_pair'].map(all_unique_pairs.famsize2)
+    overlap_df_output = overlap_df_output.merge(all_unique_pairs[["sorted_gene_pair", "famsize2"]], on = 'sorted_gene_pair', how = 'left')
+    all_unique_pairs.set_index('sorted_gene_pair', inplace  = True)
     all_tested = set(results.gene_pair)
     all_comp_results = set(results[results.compensation].gene_pair)
     all_cl_results = set(results[results.collateral_loss].gene_pair)
