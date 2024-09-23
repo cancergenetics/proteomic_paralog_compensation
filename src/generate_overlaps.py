@@ -51,8 +51,8 @@ def run_FET(interaction_dataset, input_hit_type, gene_pair, overlap_df_output):
     crosstab2 = pd.crosstab(overlap_df_local[input_hit_type], overlap_df_local[interaction_dataset])
     if crosstab2.shape == (2,2):
         OR_cond = stats.contingency.odds_ratio(crosstab2)
-        FET_OR_local = np.round(OR_cond.statistic, 7)
-        FET_p_local = np.round(stats.fisher_exact(crosstab2)[1], 7)
+        FET_OR_local = OR_cond.statistic
+        FET_p_local = stats.fisher_exact(crosstab2)[1]
         
     else:
         FET_OR_local, FET_p_local = np.nan, np.nan
@@ -114,19 +114,15 @@ def multiple_ttests_with_correction(df, colnames):
     '''
     Runs multiple t-tests to identify enrichment for quantitative biological variables and applies multiple testing correction
     '''
-    def ttest_wnans(l1, l2):
-        l1_2 = [x for x in l1 if not np.isnan(x)]
-        l2_2 = [x for x in l2 if not np.isnan(x)]
-        return stats.ttest_ind(l1_2, l2_2)
     results = []
 
     for colname in colnames:
         df2 = df.drop_duplicates(subset='sorted_gene_pair')
-        compvals = df2[df2.compensation][colname].to_list()
-        clvals = df2[df2.collateral_loss][colname].to_list()
-        nonvals = df2[df2.category == 'non_hit'][colname].to_list()
-        comp_non = ttest_wnans(compvals, nonvals)
-        cl_non = ttest_wnans(clvals, nonvals)
+        compvals = df2[df2.compensation].dropna(subset = colname)[colname].to_list()
+        clvals = df2[df2.collateral_loss].dropna(subset = colname)[colname].to_list()
+        nonvals = df2[df2.category == 'non_hit'].dropna(subset = colname)[colname].to_list()
+        comp_non = stats.ttest_ind(compvals, nonvals)
+        cl_non = stats.ttest_ind(clvals, nonvals)
         results.append({
             'colname': colname,
             'comp_vs_non_tstat': comp_non.statistic,
