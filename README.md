@@ -11,7 +11,7 @@ Data sources are listed in data_sources.md.
 ### 1. HAP1 proteomic analysis
 
 - **Script**: `./src/run_HAP1_paralog_tests.py`
-- **Description**: Processes proteomic data from 35 knockouts of paralogous proteins in HAP1 cell lines, associating KO with changes in paralog abundance.
+- **Description**: Processes proteomic data from 34 knockouts of paralogous proteins in HAP1 cell lines, associating KO with changes in paralog abundance.
 - **Output**:
    - Processed HAP1 proteomic dataset (data in Supplementary table 1) 
   - All self-tests (associations of KOs with changes in the abundance of the knocked-out protein) (Data in Supplementary table 2)
