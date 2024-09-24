@@ -50,8 +50,7 @@ def run_FET(interaction_dataset, input_hit_type, gene_pair, overlap_df_output):
     num_pairs_overlap = overlap_df_local.shape[0]
     crosstab2 = pd.crosstab(overlap_df_local[input_hit_type], overlap_df_local[interaction_dataset])
     if crosstab2.shape == (2,2):
-        OR_cond = stats.contingency.odds_ratio(crosstab2)
-        FET_OR_local = OR_cond.statistic
+        FET_OR_local = stats.fisher_exact(crosstab2)[0]
         FET_p_local = stats.fisher_exact(crosstab2)[1]
         
     else:
@@ -112,24 +111,40 @@ def get_ppi_ess(gene, network, scores):
 
 def multiple_ttests_with_correction(df, colnames):
     '''
-    Runs multiple t-tests to identify enrichment for quantitative biological variables and applies multiple testing correction
+    Runs multiple t-tests to identify enrichment for quantitative biological variables,
+    applies multiple testing correction, and includes degrees of freedom and sample size for each test
     '''
     results = []
 
     for colname in colnames:
         df2 = df.drop_duplicates(subset='sorted_gene_pair')
-        compvals = df2[df2.compensation].dropna(subset = colname)[colname].to_list()
-        clvals = df2[df2.collateral_loss].dropna(subset = colname)[colname].to_list()
-        nonvals = df2[df2.category == 'non_hit'].dropna(subset = colname)[colname].to_list()
+        compvals = df2[df2.compensation].dropna(subset=colname)[colname].to_list()
+        clvals = df2[df2.collateral_loss].dropna(subset=colname)[colname].to_list()
+        nonvals = df2[df2.category == 'non_hit'].dropna(subset=colname)[colname].to_list()
+        
         comp_non = stats.ttest_ind(compvals, nonvals)
         cl_non = stats.ttest_ind(clvals, nonvals)
+        
+        comp_non_df = len(compvals) + len(nonvals) - 2
+        cl_non_df = len(clvals) + len(nonvals) - 2
+        comp_non_sample_size = len(compvals) + len(nonvals)
+        cl_non_sample_size = len(clvals) + len(nonvals)
+        
         results.append({
             'colname': colname,
+            'n_comp_values': len(compvals),
+            'n_non_values': len(nonvals),
+            'n_cl_values': len(clvals),
             'comp_vs_non_tstat': comp_non.statistic,
             'comp_vs_non_pvalue': comp_non.pvalue,
+            'comp_vs_non_df': comp_non_df,
+            'comp_vs_non_sample_size': comp_non_sample_size,
             'cl_vs_non_tstat': cl_non.statistic,
-            'cl_vs_non_pvalue': cl_non.pvalue
+            'cl_vs_non_pvalue': cl_non.pvalue,
+            'cl_vs_non_df': cl_non_df,
+            'cl_vs_non_sample_size': cl_non_sample_size
         })
+    
     results_df = pd.DataFrame(results)
     
     _, comp_corrected_pvalues = fdrcorrection(results_df['comp_vs_non_pvalue'])

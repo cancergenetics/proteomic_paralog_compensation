@@ -52,7 +52,7 @@ def run_tests_for_df(how, workers, pairs_to_test_df, lost, quants, lin, cn_df, r
       if how == 'A2':
           pairs_to_test_df = pairs_to_test_df.drop_duplicates(subset = 'A2') # Only run one test per lost protein
       if workers > 1: # If parallel processing has been enabled-- by default it is not, pandarallel used if it is
-            pandarallel.initialize(nb_workers=workers, progress_bar=False) # Set to False to avoid screen clutter, can turn on to monitor progress 
+            pandarallel.initialize(nb_workers=workers, progress_bar=True) # Set to False to avoid screen clutter, can turn on to monitor progress 
             res_raw = pairs_to_test_df.parallel_apply(run_test, args = (lost, quants, lin, how, cn_df, runwith), axis = 1)
       else:
             res_raw = pairs_to_test_df.progress_apply(run_test, args = (lost, quants, lin, how, cn_df, runwith), axis = 1)
