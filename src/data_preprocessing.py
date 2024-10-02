@@ -78,7 +78,6 @@ def load_and_process_data(runwith='prot', overlap_only=False):
     all_pairs = pd.read_csv(pairs_path, low_memory=False)
     all_pairs['gene_pair'] = all_pairs['A1'] + '_' + all_pairs['A2']
     all_pairs['sorted_gene_pair'] = all_pairs['gene_pair'].apply(lambda x: '_'.join(sorted(x.split('_'))))
-    all_pairs['family_size'] = all_pairs['family_size'].replace(1,2)
     all_pairs['famsize2'] = (all_pairs['family_size'] == 2)
 
     def get_gene_name(entid, mapping):
