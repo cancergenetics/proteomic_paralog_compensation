@@ -45,7 +45,13 @@ Data sources are listed in data_sources.md.
   - Proteomic results must be in their respective directory for these options to work.
   - HAP1 output needs to be present for the `--HAP1_overlap` option to work.
 
-### 4. Visualization
+### 4. Logistic regression 
+
+- **Notebook**: `LogisticRegression.ipynb`
+- **Description**: Assesses predictive power of compensation and collateral loss-associated variables, assesses correlation between variables, and fits logistic regression models to select important features.
+  **Default Output Directory**: `./output/figures`
+
+### 5. Visualization
 
 - **Notebook**: `Visualize.ipynb` 
 - **Description**: Generates all separate panels of the main and supplementary figures.
@@ -54,7 +60,7 @@ Data sources are listed in data_sources.md.
   - Enrichment of transcriptional hits in proteomic hits
 - **Default Output Directory**: `./output/figures`
 
-### 5. Generate supplementary tables 
+### 6. Generate supplementary tables 
 
 - **Script**: `clean_and_format_supptables.py` 
 - **Description**: Processes results CSVs output by scripts to generate supplementary tables of the paper.
