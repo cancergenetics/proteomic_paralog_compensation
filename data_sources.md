@@ -23,3 +23,15 @@
 11. Ubiquitination site data (Ubiquitination_site_dataset) accessed from Phosphosite (https://www.phosphosite.org/staticDownloads#) on 7th Aug 2024. 
 
 12. Gene ID mapping file (geneidmap_sep24.txt) accessed from HUGO (https://www.genenames.org/download/custom/) on 22nd Sep 2024.
+
+13. Protein length annotations obtained using UniProt API (https://www.uniprot.org/api-documentation/uniprotkb) on 1st Apr 2025.
+
+14. AlphaFold heterodimer models obtained from https://ftp.ebi.ac.uk/pub/databases/ProtVar/ (Janes et al 2024)
+
+15. Experimentally determined protein half-lives were obtained from https://www.mcponline.org/cms/10.1074/mcp.RA118.000583/attachment/63f48240-d18e-43ca-9390-ad879f6c69a8/mmc1.zip (Zecha et al 2018)
+
+16. Dorothea regulons were accessed using the Dorothea package v1.0.0 (https://github.com/saezlab/dorothea)
+
+17. Perturb-seq results were obtained from https://doi.org/10.25452/figshare.plus.21632564.v1 (corrected p-values) and https://doi.org/10.25452/figshare.plus.20029387.v1 (expression values for directionality) (Replogle et al 2022)
+
+18. Mean abundance values were calculated using the GTEx database of protein abundances v8, accessed 19th September 2023 (https://gtexportal.org/home/downloads/egtex/proteomics) ( 
