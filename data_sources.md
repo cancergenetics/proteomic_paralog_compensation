@@ -34,4 +34,4 @@
 
 17. Perturb-seq results were obtained from https://doi.org/10.25452/figshare.plus.21632564.v1 (corrected p-values) and https://doi.org/10.25452/figshare.plus.20029387.v1 (expression values for directionality) (Replogle et al 2022)
 
-18. Mean abundance values were calculated using the GTEx database of protein abundances v8, accessed 19th September 2023 (https://gtexportal.org/home/downloads/egtex/proteomics) ( 
+18. Mean abundance values were calculated using the GTEx database of protein abundances v8, accessed 19th September 2023 (https://gtexportal.org/home/downloads/egtex/proteomics)
