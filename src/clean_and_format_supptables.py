@@ -43,33 +43,55 @@ def main():
     appendix_table2_HAP1_A2A2 = pd.read_csv('../output/output_HAP1/HAP1_selftest_results.csv', index_col=0)
     appendix_table2_HAP1_A2A2 = appendix_table2_HAP1_A2A2.rename(columns={'real_A2': 'gene_name', 'p_values_adjusted': 'FDR', 'sig': 'drop_in_KO'})
     appendix_table2_HAP1_A2A2 = appendix_table2_HAP1_A2A2.drop(columns=['A2', 'clone']).set_index('gene_name').reset_index()
+    # Ensure boolean columns stay as strings when saving
+    if 'drop_in_KO' in appendix_table2_HAP1_A2A2.columns:
+        appendix_table2_HAP1_A2A2['drop_in_KO'] = appendix_table2_HAP1_A2A2['drop_in_KO'].map({True: 'True', False: 'False'})
     appendix_table2_HAP1_A2A2.to_csv('../output/appendix_tables/appendix_table2_HAP1_selftest_results.csv', index=True)
 
     # Process HAP1 paralog test results
     appendix_table3_HAP1_A1A2 = pd.read_csv('../output/output_HAP1/HAP1_paralogtest_results.csv', index_col=0)
     appendix_table3_HAP1_A1A2 = appendix_table3_HAP1_A1A2.rename(columns={'p_values_adjusted': 'FDR'})
     appendix_table3_HAP1_A1A2['gene_pair'] = appendix_table3_HAP1_A1A2['gene_pair'].apply(lambda x: '_'.join(x.split('_')[0:2]))
+    # Ensure boolean columns stay as strings when saving
+    for col in ['compensation', 'collateral_loss']:
+        if col in appendix_table3_HAP1_A1A2.columns:
+            appendix_table3_HAP1_A1A2[col] = appendix_table3_HAP1_A1A2[col].map({True: 'True', False: 'False'})
     appendix_table3_HAP1_A1A2.to_csv('../output/appendix_tables/appendix_table3_HAP1_paralogtest_results.csv', index=True)
 
     # Process CPTAC self-test results
     appendix_table4_CPTAC_A2A2 = pd.read_csv('../output/output_CPTAC/prot/self_tests_prot.csv', index_col=0)
     appendix_table4_CPTAC_A2A2 = appendix_table4_CPTAC_A2A2.rename(columns={'A2': 'A2_gene_symbol', 'backed': 'drop_when_lost', 'A2_lost_mean_quant_A1': 'A2_mean_when_lost', 'A2_other_mean_quant_A1': 'A2_mean_when_notlost'})
+    # Ensure boolean columns stay as strings when saving
+    if 'drop_when_lost' in appendix_table4_CPTAC_A2A2.columns:
+        appendix_table4_CPTAC_A2A2['drop_when_lost'] = appendix_table4_CPTAC_A2A2['drop_when_lost'].map({True: 'True', False: 'False'})
     appendix_table4_CPTAC_A2A2.to_csv('../output/appendix_tables/appendix_table4_CPTAC_selftest_results.csv', index=True)
 
     # Process CPTAC proteomics paralog test results
     appendix_table5_CPTAC_A1A2 = pd.read_csv('../output/output_CPTAC/prot/paralog_tests_prot.csv', index_col=0)
     appendix_table5_CPTAC_A1A2 = appendix_table5_CPTAC_A1A2.rename(columns={'p_adj': 'FDR'})
     appendix_table5_CPTAC_A1A2['data_type'] = 'proteomics'
+    # Ensure boolean columns stay as strings when saving
+    for col in ['compensation', 'collateral_loss']:
+        if col in appendix_table5_CPTAC_A1A2.columns:
+            appendix_table5_CPTAC_A1A2[col] = appendix_table5_CPTAC_A1A2[col].map({True: 'True', False: 'False'})
     appendix_table5_CPTAC_A1A2.to_csv('../output/appendix_tables/appendix_table5_CPTAC_proteomics_paralogtest_results.csv', index=True)
 
     # Process transcriptomics and residual results
     trans_results = pd.read_csv('../output/output_CPTAC/trans/paralog_tests_trans.csv', index_col=0)
     trans_results = trans_results.rename(columns={'p_adj': 'FDR'})
     trans_results['data_type'] = 'transcriptomics'
+    # Ensure boolean columns stay as strings
+    for col in ['compensation', 'collateral_loss']:
+        if col in trans_results.columns:
+            trans_results[col] = trans_results[col].map({True: 'True', False: 'False'})
 
     resid_results = pd.read_csv('../output/output_CPTAC/prot_residual/paralog_tests_prot_residual.csv', index_col=0)
     resid_results = resid_results.rename(columns={'p_adj': 'FDR'})
     resid_results['data_type'] = 'prot_residual'
+    # Ensure boolean columns stay as strings
+    for col in ['compensation', 'collateral_loss']:
+        if col in resid_results.columns:
+            resid_results[col] = resid_results[col].map({True: 'True', False: 'False'})
 
     appendix_table6_other2_datasets = pd.concat([trans_results, resid_results])
     appendix_table6_other2_datasets['gene_pair_tested_in_dataset'] = appendix_table6_other2_datasets['gene_pair'] + '_testedin_' + appendix_table6_other2_datasets['data_type']
@@ -84,8 +106,8 @@ def main():
     renaming_dict = {
         'bronze_standard_SL': 'depmap_SL',
         'strict_comb_hit': 'SL_atleast2_CRISPRscreens',
-        'in_PC_CORUM_essential': 'either_in_essential_CORUM_complex',
         'lenient_comb_hit': 'SL_atleast1_CRISPRscreen',
+        'in_PC_CORUM_essential': 'either_in_essential_CORUM_complex',
         'in_PC_CORUM': 'either_in_CORUM_complex',
         'in_PC_CORUM_both': 'both_in_same_CORUM_complex',
         'in_PC_EBI': 'either_in_EBIComplexPortal_complex',
@@ -99,6 +121,12 @@ def main():
         columns=['Unnamed: 0', 't_stat', 'p_val', 'p_values_adjusted', 'compensation', 'collateral_loss', 'logFC', 'dataset', 'FDR_threshold', 'sorted_gene_pair', 'A1', 'A2']).rename(columns={'category': 'HAP1_hit_type'})
 
     appendix_table7_HAP1_bioannots = appendix_table7_HAP1_bioannots.merge(annotated_hap1, on='gene_pair')
+    
+    # Convert boolean columns to string True/False
+    for col in appendix_table7_HAP1_bioannots.columns:
+        if appendix_table7_HAP1_bioannots[col].dtype == bool:
+            appendix_table7_HAP1_bioannots[col] = appendix_table7_HAP1_bioannots[col].map({True: 'True', False: 'False'})
+    
     appendix_table7_HAP1_bioannots.to_csv('../output/appendix_tables/appendix_table7_allHAP1pairs_biological_info.csv')
 
     # Process CPTAC biological annotations
@@ -108,32 +136,46 @@ def main():
     appendix_table8_CPTAC_bioannots = clean_up_overlap_annots(appendix_table8_CPTAC_bioannots, consensus_SL=all_screened_pairs, renaming_dict=renaming_dict)
     appendix_table8_CPTAC_bioannots = appendix_table8_CPTAC_bioannots.merge(annotated_cptac, on='gene_pair').set_index('gene_pair').reset_index()
 
+    # Need to use string versions of boolean values to avoid conversion to 0/1
     prot_tested = appendix_table5_CPTAC_A1A2.gene_pair.to_list()
-    protcomp = appendix_table5_CPTAC_A1A2[appendix_table5_CPTAC_A1A2.compensation].gene_pair.to_list()
-    protcl = appendix_table5_CPTAC_A1A2[appendix_table5_CPTAC_A1A2.collateral_loss].gene_pair.to_list()
+    protcomp = appendix_table5_CPTAC_A1A2[appendix_table5_CPTAC_A1A2.compensation == 'True'].gene_pair.to_list()
+    protcl = appendix_table5_CPTAC_A1A2[appendix_table5_CPTAC_A1A2.collateral_loss == 'True'].gene_pair.to_list()
 
     trans_tested = trans_results.gene_pair.to_list()
-    transcomp = trans_results[trans_results.compensation].gene_pair.to_list()
-    transcl = trans_results[trans_results.collateral_loss].gene_pair.to_list()
+    transcomp = trans_results[trans_results.compensation == 'True'].gene_pair.to_list()
+    transcl = trans_results[trans_results.collateral_loss == 'True'].gene_pair.to_list()
 
     resid_tested = resid_results.gene_pair.to_list()
-    residcomp = resid_results[resid_results.compensation].gene_pair.to_list()
-    residcl = resid_results[resid_results.collateral_loss].gene_pair.to_list()
+    residcomp = resid_results[resid_results.compensation == 'True'].gene_pair.to_list()
+    residcl = resid_results[resid_results.collateral_loss == 'True'].gene_pair.to_list()
 
-    appendix_table8_CPTAC_bioannots['prot_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in protcomp))
-    appendix_table8_CPTAC_bioannots['prot_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in protcl))
-    appendix_table8_CPTAC_bioannots['trans_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in transcomp))
-    appendix_table8_CPTAC_bioannots['trans_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in transcl))
-    appendix_table8_CPTAC_bioannots['resid_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in residcomp))
-    appendix_table8_CPTAC_bioannots['resid_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in residcl))
+    # Create boolean columns but immediately convert to string True/False
+    appendix_table8_CPTAC_bioannots['prot_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: str(x in protcomp))
+    appendix_table8_CPTAC_bioannots['prot_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: str(x in protcl))
+    appendix_table8_CPTAC_bioannots['trans_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: str(x in transcomp))
+    appendix_table8_CPTAC_bioannots['trans_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: str(x in transcl))
+    appendix_table8_CPTAC_bioannots['resid_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: str(x in residcomp))
+    appendix_table8_CPTAC_bioannots['resid_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: str(x in residcl))
 
-    appendix_table8_CPTAC_bioannots['other_dir_prot_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in protcomp if get_other_dir_genepair(x) in prot_tested else np.nan)
-    appendix_table8_CPTAC_bioannots['other_dir_prot_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in protcl if get_other_dir_genepair(x) in prot_tested else np.nan)
-    appendix_table8_CPTAC_bioannots['other_dir_trans_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in transcomp if get_other_dir_genepair(x) in trans_tested else np.nan)
-    appendix_table8_CPTAC_bioannots['other_dir_trans_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in transcl if get_other_dir_genepair(x) in trans_tested else np.nan)
-    appendix_table8_CPTAC_bioannots['other_dir_resid_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in residcomp if get_other_dir_genepair(x) in resid_tested else np.nan)
-    appendix_table8_CPTAC_bioannots['other_dir_resid_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in residcl if get_other_dir_genepair(x) in resid_tested else np.nan)
+    # Handle NaN values properly for 'other_dir' columns
+    appendix_table8_CPTAC_bioannots['other_dir_prot_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(
+        lambda x: str(get_other_dir_genepair(x) in protcomp) if get_other_dir_genepair(x) in prot_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_prot_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(
+        lambda x: str(get_other_dir_genepair(x) in protcl) if get_other_dir_genepair(x) in prot_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_trans_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(
+        lambda x: str(get_other_dir_genepair(x) in transcomp) if get_other_dir_genepair(x) in trans_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_trans_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(
+        lambda x: str(get_other_dir_genepair(x) in transcl) if get_other_dir_genepair(x) in trans_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_resid_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(
+        lambda x: str(get_other_dir_genepair(x) in residcomp) if get_other_dir_genepair(x) in resid_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_resid_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(
+        lambda x: str(get_other_dir_genepair(x) in residcl) if get_other_dir_genepair(x) in resid_tested else np.nan)
 
+    # Convert any remaining boolean columns to string True/False
+    for col in appendix_table8_CPTAC_bioannots.columns:
+        if appendix_table8_CPTAC_bioannots[col].dtype == bool:
+            appendix_table8_CPTAC_bioannots[col] = appendix_table8_CPTAC_bioannots[col].map({True: 'True', False: 'False'})
+            
     appendix_table8_CPTAC_bioannots.to_csv('../output/appendix_tables/appendix_table8_allCPTACpairs_biological_info.csv')
 
     # Process CPTAC Fisher's Exact Test results
@@ -205,9 +247,14 @@ def main():
         # Create new sheet
         ws = wb.create_sheet(title=sheet_name)
         
-        # Add data from dataframe
+        for col in table.columns:
+            if table[col].dtype == bool:
+                table[col] = table[col].map({True: 'True', False: 'False'}) # seems more readable than 0s and 1s
+                
         for r_idx, row in enumerate(dataframe_to_rows(table, index=False, header=True), 1):
             for c_idx, value in enumerate(row, 1):
+                if isinstance(value, bool):
+                    value = str(value)
                 ws.cell(row=r_idx, column=c_idx, value=value)
     
     # Save the workbook
