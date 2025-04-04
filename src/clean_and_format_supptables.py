@@ -37,7 +37,7 @@ def main():
     # Read and process HAP1 proteomics data
     appendix_table1_HAP1_protdata = pd.read_csv('../output/output_HAP1/HAP1_prot_renamed.csv')
     appendix_table1_HAP1_protdata = appendix_table1_HAP1_protdata.rename(columns={'gene_name': 'gene_symbols'}).set_index('gene_symbols')
-    appendix_table1_HAP1_protdata.to_csv('../output/appendix_tables/appendix_table1_HAP1_proteomics.csv', index=True)
+    appendix_table1_HAP1_protdata.to_csv('../output/supp_tables/appendix_table1_HAP1_proteomics.csv', index=True)
 
     # Process HAP1 self-test results
     appendix_table2_HAP1_A2A2 = pd.read_csv('../output/output_HAP1/HAP1_selftest_results.csv', index_col=0)
@@ -46,7 +46,7 @@ def main():
     # Ensure boolean columns stay as strings when saving
     if 'drop_in_KO' in appendix_table2_HAP1_A2A2.columns:
         appendix_table2_HAP1_A2A2['drop_in_KO'] = appendix_table2_HAP1_A2A2['drop_in_KO'].map({True: 'True', False: 'False'})
-    appendix_table2_HAP1_A2A2.to_csv('../output/appendix_tables/appendix_table2_HAP1_selftest_results.csv', index=True)
+    appendix_table2_HAP1_A2A2.to_csv('../output/supp_tables/appendix_table2_HAP1_selftest_results.csv', index=True)
 
     # Process HAP1 paralog test results
     appendix_table3_HAP1_A1A2 = pd.read_csv('../output/output_HAP1/HAP1_paralogtest_results.csv', index_col=0)
@@ -56,7 +56,7 @@ def main():
     for col in ['compensation', 'collateral_loss']:
         if col in appendix_table3_HAP1_A1A2.columns:
             appendix_table3_HAP1_A1A2[col] = appendix_table3_HAP1_A1A2[col].map({True: 'True', False: 'False'})
-    appendix_table3_HAP1_A1A2.to_csv('../output/appendix_tables/appendix_table3_HAP1_paralogtest_results.csv', index=True)
+    appendix_table3_HAP1_A1A2.to_csv('../output/supp_tables/appendix_table3_HAP1_paralogtest_results.csv', index=True)
 
     # Process CPTAC self-test results
     appendix_table4_CPTAC_A2A2 = pd.read_csv('../output/output_CPTAC/prot/self_tests_prot.csv', index_col=0)
@@ -64,7 +64,7 @@ def main():
     # Ensure boolean columns stay as strings when saving
     if 'drop_when_lost' in appendix_table4_CPTAC_A2A2.columns:
         appendix_table4_CPTAC_A2A2['drop_when_lost'] = appendix_table4_CPTAC_A2A2['drop_when_lost'].map({True: 'True', False: 'False'})
-    appendix_table4_CPTAC_A2A2.to_csv('../output/appendix_tables/appendix_table4_CPTAC_selftest_results.csv', index=True)
+    appendix_table4_CPTAC_A2A2.to_csv('../output/supp_tables/appendix_table4_CPTAC_selftest_results.csv', index=True)
 
     # Process CPTAC proteomics paralog test results
     appendix_table5_CPTAC_A1A2 = pd.read_csv('../output/output_CPTAC/prot/paralog_tests_prot.csv', index_col=0)
@@ -74,7 +74,7 @@ def main():
     for col in ['compensation', 'collateral_loss']:
         if col in appendix_table5_CPTAC_A1A2.columns:
             appendix_table5_CPTAC_A1A2[col] = appendix_table5_CPTAC_A1A2[col].map({True: 'True', False: 'False'})
-    appendix_table5_CPTAC_A1A2.to_csv('../output/appendix_tables/appendix_table5_CPTAC_proteomics_paralogtest_results.csv', index=True)
+    appendix_table5_CPTAC_A1A2.to_csv('../output/supp_tables/appendix_table5_CPTAC_proteomics_paralogtest_results.csv', index=True)
 
     # Process transcriptomics and residual results
     trans_results = pd.read_csv('../output/output_CPTAC/trans/paralog_tests_trans.csv', index_col=0)
@@ -96,7 +96,7 @@ def main():
     appendix_table6_other2_datasets = pd.concat([trans_results, resid_results])
     appendix_table6_other2_datasets['gene_pair_tested_in_dataset'] = appendix_table6_other2_datasets['gene_pair'] + '_testedin_' + appendix_table6_other2_datasets['data_type']
     appendix_table6_other2_datasets = appendix_table6_other2_datasets.set_index('gene_pair_tested_in_dataset').reset_index()
-    appendix_table6_other2_datasets.to_csv('../output/appendix_tables/appendix_table6_CPTAC_trans_and_resid_paralog_test_results.csv', index=True)
+    appendix_table6_other2_datasets.to_csv('../output/supp_tables/appendix_table6_CPTAC_trans_and_resid_paralog_test_results.csv', index=True)
 
     # Process HAP1 biological annotations
     appendix_table7_HAP1_bioannots = pd.read_csv('../output/output_HAP1/HAP1_overlaps_categorical.csv', index_col=0).set_index('gene_pair').iloc[:, 10:].reset_index()
@@ -127,7 +127,7 @@ def main():
         if appendix_table7_HAP1_bioannots[col].dtype == bool:
             appendix_table7_HAP1_bioannots[col] = appendix_table7_HAP1_bioannots[col].map({True: 'True', False: 'False'})
     
-    appendix_table7_HAP1_bioannots.to_csv('../output/appendix_tables/appendix_table7_allHAP1pairs_biological_info.csv')
+    appendix_table7_HAP1_bioannots.to_csv('../output/supp_tables/appendix_table7_allHAP1pairs_biological_info.csv')
 
     # Process CPTAC biological annotations
     appendix_table8_CPTAC_bioannots = pd.read_csv('../output/output_CPTAC/prot/categorical_overlaps_prot.csv', index_col=0)
@@ -176,7 +176,7 @@ def main():
         if appendix_table8_CPTAC_bioannots[col].dtype == bool:
             appendix_table8_CPTAC_bioannots[col] = appendix_table8_CPTAC_bioannots[col].map({True: 'True', False: 'False'})
             
-    appendix_table8_CPTAC_bioannots.to_csv('../output/appendix_tables/appendix_table8_allCPTACpairs_biological_info.csv')
+    appendix_table8_CPTAC_bioannots.to_csv('../output/supp_tables/appendix_table8_allCPTACpairs_biological_info.csv')
 
     # Process CPTAC Fisher's Exact Test results
     appendix_table9_CPTAC_FET = pd.read_csv('../output/output_CPTAC/prot/categorical_FETs_uniquegenepairs_prot.csv', index_col=0)
@@ -192,13 +192,13 @@ def main():
     resid_FET['dataset'] = 'prot_residual'
 
     appendix_table9_CPTAC_FET = pd.concat([appendix_table9_CPTAC_FET, trans_FET, resid_FET])
-    appendix_table9_CPTAC_FET.to_csv('../output/appendix_tables/appendix_table9_allCPTAC_categorical_overlaptests.csv', index=True)
+    appendix_table9_CPTAC_FET.to_csv('../output/supp_tables/appendix_table9_allCPTAC_categorical_overlaptests.csv', index=True)
 
     # Process CPTAC t-test results
     appendix_table10_CPTAC_tt = pd.read_csv('../output/output_CPTAC/prot/quantitative_ttests_foroverlaps_prot.csv', index_col=0)
     appendix_table10_CPTAC_tt['dataset'] = 'proteomics'
     appendix_table10_CPTAC_tt = appendix_table10_CPTAC_tt.drop(columns='colname').set_index('Variable').reset_index().rename(columns={'Variable': 'variable'})
-    appendix_table10_CPTAC_tt.to_csv('../output/appendix_tables/appendix_table10_allCPTAC_quantitative_overlaptests.csv', index=True)
+    appendix_table10_CPTAC_tt.to_csv('../output/supp_tables/appendix_table10_allCPTAC_quantitative_overlaptests.csv', index=True)
     
     # Create a multi-sheet Excel file
     print('Creating multi-sheet Excel file...')
@@ -258,8 +258,8 @@ def main():
                 ws.cell(row=r_idx, column=c_idx, value=value)
     
     # Save the workbook
-    wb.save('../output/appendix_tables/appendix_tables.xlsx')
-    print('Done! Excel file saved to ../output/appendix_tables/appendix_tables.xlsx')
+    wb.save('../output/supp_tables/appendix_tables.xlsx')
+    print('Done! Excel file saved to ../output/supp_tables/appendix_tables.xlsx')
 
 if __name__ == '__main__':
     main()
