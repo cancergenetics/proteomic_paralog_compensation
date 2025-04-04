@@ -1,4 +1,5 @@
 import sys
+import numpy as np
 import pandas as pd
 from parse_args import parse_args
 from data_preprocessing import load_and_process_data
@@ -14,7 +15,7 @@ def main():
     print(f'\n ******* Running paralog compensation analysis with CPTAC {args.runwith} '
           f'data using {args.nb_workers} workers ******* \n')
     
-    processed_data = load_and_process_data(runwith=args.runwith)
+    processed_data = load_and_process_data(runwith=args.runwith, nb_workers=args.nb_workers)
     data_df, cndf, sample_info, all_pairs = processed_data[0]
     print(f'We are working with data df at {data_df.shape}')
     filtering_dict, pairs_to_test = get_pairs_to_test(
@@ -44,6 +45,7 @@ def main():
             lost=A2_lost,
             filtering_dict=filtering_dict
         )
+
         res_raw_A2 = run_tests_for_df(
             how='A2',
             workers=int(args.nb_workers),
@@ -54,6 +56,7 @@ def main():
             cn_df=cndf,
             runwith=args.runwith
         )
+
         results_A2, filtering_dict = process_results(
             how='A2',
             res_raw=res_raw_A2,
@@ -66,6 +69,8 @@ def main():
             filtering_dict=filtering_dict
         )
     print(f'Starting with {len(pairs_to_test_processed_backed)} pairs to test')
+
+    
     res_raw_A1A2 = run_tests_for_df(
         how='A1',
         workers=int(args.nb_workers),
@@ -82,7 +87,6 @@ def main():
         pairs=pairs_to_test_processed_backed,
         filtering_dict=filtering_dict
     )
-    
     filtering_df = pd.DataFrame(list(filtering_dict.items()), columns=['Step', 'Pairs remaining'])
 
     dfs_for_cat_overlap = processed_data[1]
@@ -100,7 +104,7 @@ def main():
         if args.runwith == 'prot':
             overlap_df_output, FETs_genepair, FETs_sortedgenepair, quant_ttest_overlaps, annotated_res = output_dfs
             print(f'In total, we identify {len(results_A2[results_A2.backed])} proteins out of '
-                f'{len(results_A2)} tested that display a drop in protein abundance when hemizygously lost.\n A2-A2 results saved.')
+                  f'{len(results_A2)} tested that display a drop in protein abundance when hemizygously lost.\n A2-A2 results saved.')
             
             results_A2.to_csv(f'../output/output_CPTAC/{args.runwith}/self_tests_{args.runwith}.csv')
             filtering_df.to_csv(f'../output/output_CPTAC/{args.runwith}/pairs_filtered_at_each_step_{args.runwith}.csv')
@@ -125,12 +129,17 @@ def main():
 
     if args.HAP1_overlap == False:
         overlap_df_output.to_csv(f'../output/output_CPTAC/{args.runwith}/categorical_overlaps_{args.runwith}.csv')
-        #FETs_genepair.to_csv(f'../output/output_CPTAC/{args.runwith}_/categorical_FETs_directionalgenepairs_{args.runwith}.csv') 
+        FETs_genepair.to_csv(f'../output/output_CPTAC/{args.runwith}/categorical_FETs_directionalgenepairs_{args.runwith}.csv') 
         FETs_sortedgenepair.to_csv(f'../output/output_CPTAC/{args.runwith}/categorical_FETs_uniquegenepairs_{args.runwith}.csv')
 
         if args.runwith == 'prot':
             quant_ttest_overlaps.to_csv(f'../output/output_CPTAC/{args.runwith}/quantitative_ttests_foroverlaps_prot.csv')
             annotated_res.to_csv(f'../output/output_CPTAC/{args.runwith}/all_quantoverlaps_prot.csv')
+            quant_cols = list(np.setdiff1d(annotated_res.columns.to_list(), overlap_df_output.columns.to_list()))
+            quant_cols+= ['gene_pair']
+            annotated_df_for_logreg = overlap_df_output.merge(annotated_res[quant_cols], on = 'gene_pair', how = 'inner')
+            annotated_df_for_logreg.to_csv(f'../output/output_CPTAC/{args.runwith}/annotated_df_for_logreg.csv')
+
     print('*****')
 
 
