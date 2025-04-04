@@ -1,7 +1,9 @@
-# This script cleans output datasets and generates formatted supplementary tables
+# This script cleans output datasets and generates formatted appendix tables in a multi-sheet Excel file
 
 import numpy as np
 import pandas as pd
+from openpyxl import Workbook
+from openpyxl.utils.dataframe import dataframe_to_rows
 
 def main():
 
@@ -16,35 +18,49 @@ def main():
         df = df.merge(consensus_SL, on='sorted_gene_pair', how='left').set_index('gene_pair').reset_index().set_index('sorted_gene_pair').reset_index()
         return df
 
-    print('Formatting supplementary tables...')
+    print('Formatting appendix tables...')
+
+    # Define table descriptions for the introduction sheet
+    table_descriptions = [
+        "**Appendix Table S1: Processed HAP1 proteomic data** HAP1 proteomic data from 34 paralog knockouts, processed as outlined in the Methods.",
+        "**Appendix Table S2: All self-abundance HAP1 tests** T-statistic, log fold change, p-values and FDRs are for a comparison of protein abundance when the gene has been knocked out, versus its abundance in the wild-type. \"drop_in_KO\" contains information on whether the gene passed the test.",
+        "**Appendix Table S3: All paralog HAP1 tests** T-statistic, log fold change, p-values and FDRs are for a comparison of protein abundance when its paralog has been knocked out, versus its abundance in the wild-type. \"compensation\" and \"collateral_loss\" contain information on whether each paralog is a compensation or collateral loss hit (see Methods).",
+        "**Appendix Table S4 : All self-abundance CPTAC tests**: Ordinary least squares regression models were fit for each testable protein to explain its abundance using its own hemizygous loss status across CPTAC samples, with lineage/study as a covariate. OLS coefficients, p-values (i.e. Two-tailed p values for the t-statistic for the A2 loss variable), FDRs (Benjamini Hochberg multiple testing correction applied to p-values), mean values when lost vs. when not lost, number of samples a gene has been lost in, and whether or not loss is significantly (p-value < 0.05) associated with drop in protein abundance.",
+        "**Appendix Table S5: CPTAC proteomic results** All paralog CPTAC tests. Ordinary least squares regression models were fit for each testable protein to explain its abundance using its paralog's hemizygous loss status across CPTAC samples, with lineage/study as a covariate. OLS coefficients, p-values (i.e. t-statistics for the loss variable), FDRs (Benjamini Hochberg multiple testing correction applied to pvalues), mean values when lost vs. when not lost, and OLS model r-squared values, number of samples a gene has been lost in, and whether or not paralog loss is significantly (FDR < 5% and uncorrected p-value < 0.05) associated with change in protein abundance (compensation or collateral_loss).",
+        "**Appendix Table S6: CPTAC transcriptomic and protein residual results** Results of the above analysis run using transcriptomic data rather than proteomic data, as well as results with protein residuals, i.e. a version of the proteomic dataset where lineage and self-transcript effects have been regressed out (by fitting separate ordinary least squares models for each protein, see Methods).",
+        "**Appendix Table S7: Biological information for all HAP1 pairs** Information about protein complex membership, closest pair status, sequence identity, family size, Jaccard index, degree centrality, conservation score, and synthetic lethality for all paralog pairs tested using HAP1 data.",
+        "**Appendix Table S8: Biological information for all CPTAC pairs** Information about protein complex membership, closest pair status, sequence identity, family size, Jaccard index, degree centrality, conservation score, and synthetic lethality for all paralog pairs tested using CPTAC data.",
+        "**Appendix Table S9: All Fishers Exact Test results (categorical overlap tests) for CPTAC pairs** Results of all Fishers Exact Tests run to identify overlap between CPTAC compensation and collateral loss status and various categorical biological characteristics including synthetic lethality, protein complex membership, closest pair status, and family size 2 (i.e no other paralogs in the family) as described in the methods.",
+        "**Appendix Table S10: All t-test results (quantitative overlap tests) for CPTAC pairs** Results of t-tests run to identify enrichment in CPTAC hits for quantitative biological characteristics such as sequence identity, family size, Jaccard index, degree centrality of lost gene, essentiality of the neighbours of the lost gene, and conservation scores."
+    ]
 
     # Read and process HAP1 proteomics data
-    supp_table1_HAP1_protdata = pd.read_csv('../output/output_HAP1/HAP1_prot_renamed.csv')
-    supp_table1_HAP1_protdata = supp_table1_HAP1_protdata.rename(columns={'gene_name': 'gene_symbols'}).set_index('gene_symbols')
-    supp_table1_HAP1_protdata.to_csv('../output/supp_tables/supplementary_table1_HAP1_proteomics.csv', index=True)
+    appendix_table1_HAP1_protdata = pd.read_csv('../output/output_HAP1/HAP1_prot_renamed.csv')
+    appendix_table1_HAP1_protdata = appendix_table1_HAP1_protdata.rename(columns={'gene_name': 'gene_symbols'}).set_index('gene_symbols')
+    appendix_table1_HAP1_protdata.to_csv('../output/appendix_tables/appendix_table1_HAP1_proteomics.csv', index=True)
 
     # Process HAP1 self-test results
-    supp_table2_HAP1_A2A2 = pd.read_csv('../output/output_HAP1/HAP1_selftest_results.csv', index_col=0)
-    supp_table2_HAP1_A2A2 = supp_table2_HAP1_A2A2.rename(columns={'real_A2': 'gene_name', 'p_values_adjusted': 'FDR', 'sig': 'drop_in_KO'})
-    supp_table2_HAP1_A2A2 = supp_table2_HAP1_A2A2.drop(columns=['A2', 'clone']).set_index('gene_name').reset_index()
-    supp_table2_HAP1_A2A2.to_csv('../output/supp_tables/supplementary_table2_HAP1_selftest_results.csv', index=True)
+    appendix_table2_HAP1_A2A2 = pd.read_csv('../output/output_HAP1/HAP1_selftest_results.csv', index_col=0)
+    appendix_table2_HAP1_A2A2 = appendix_table2_HAP1_A2A2.rename(columns={'real_A2': 'gene_name', 'p_values_adjusted': 'FDR', 'sig': 'drop_in_KO'})
+    appendix_table2_HAP1_A2A2 = appendix_table2_HAP1_A2A2.drop(columns=['A2', 'clone']).set_index('gene_name').reset_index()
+    appendix_table2_HAP1_A2A2.to_csv('../output/appendix_tables/appendix_table2_HAP1_selftest_results.csv', index=True)
 
     # Process HAP1 paralog test results
-    supp_table3_HAP1_A1A2 = pd.read_csv('../output/output_HAP1/HAP1_paralogtest_results.csv', index_col=0)
-    supp_table3_HAP1_A1A2 = supp_table3_HAP1_A1A2.rename(columns={'p_values_adjusted': 'FDR'})
-    supp_table3_HAP1_A1A2['gene_pair'] = supp_table3_HAP1_A1A2['gene_pair'].apply(lambda x: '_'.join(x.split('_')[0:2]))
-    supp_table3_HAP1_A1A2.to_csv('../output/supp_tables/supplementary_table3_HAP1_paralogtest_results.csv', index=True)
+    appendix_table3_HAP1_A1A2 = pd.read_csv('../output/output_HAP1/HAP1_paralogtest_results.csv', index_col=0)
+    appendix_table3_HAP1_A1A2 = appendix_table3_HAP1_A1A2.rename(columns={'p_values_adjusted': 'FDR'})
+    appendix_table3_HAP1_A1A2['gene_pair'] = appendix_table3_HAP1_A1A2['gene_pair'].apply(lambda x: '_'.join(x.split('_')[0:2]))
+    appendix_table3_HAP1_A1A2.to_csv('../output/appendix_tables/appendix_table3_HAP1_paralogtest_results.csv', index=True)
 
     # Process CPTAC self-test results
-    supp_table4_CPTAC_A2A2 = pd.read_csv('../output/output_CPTAC/prot/self_tests_prot.csv', index_col=0)
-    supp_table4_CPTAC_A2A2 = supp_table4_CPTAC_A2A2.rename(columns={'A2': 'A2_gene_symbol', 'backed': 'drop_when_lost', 'A2_lost_mean_quant_A1': 'A2_mean_when_lost', 'A2_other_mean_quant_A1': 'A2_mean_when_notlost'})
-    supp_table4_CPTAC_A2A2.to_csv('../output/supp_tables/supplementary_table4_CPTAC_selftest_results.csv', index=True)
+    appendix_table4_CPTAC_A2A2 = pd.read_csv('../output/output_CPTAC/prot/self_tests_prot.csv', index_col=0)
+    appendix_table4_CPTAC_A2A2 = appendix_table4_CPTAC_A2A2.rename(columns={'A2': 'A2_gene_symbol', 'backed': 'drop_when_lost', 'A2_lost_mean_quant_A1': 'A2_mean_when_lost', 'A2_other_mean_quant_A1': 'A2_mean_when_notlost'})
+    appendix_table4_CPTAC_A2A2.to_csv('../output/appendix_tables/appendix_table4_CPTAC_selftest_results.csv', index=True)
 
     # Process CPTAC proteomics paralog test results
-    supp_table5_CPTAC_A1A2 = pd.read_csv('../output/output_CPTAC/prot/paralog_tests_prot.csv', index_col=0)
-    supp_table5_CPTAC_A1A2 = supp_table5_CPTAC_A1A2.rename(columns={'p_adj': 'FDR'})
-    supp_table5_CPTAC_A1A2['data_type'] = 'proteomics'
-    supp_table5_CPTAC_A1A2.to_csv('../output/supp_tables/supplementary_table5_CPTAC_proteomics_paralogtest_results.csv', index=True)
+    appendix_table5_CPTAC_A1A2 = pd.read_csv('../output/output_CPTAC/prot/paralog_tests_prot.csv', index_col=0)
+    appendix_table5_CPTAC_A1A2 = appendix_table5_CPTAC_A1A2.rename(columns={'p_adj': 'FDR'})
+    appendix_table5_CPTAC_A1A2['data_type'] = 'proteomics'
+    appendix_table5_CPTAC_A1A2.to_csv('../output/appendix_tables/appendix_table5_CPTAC_proteomics_paralogtest_results.csv', index=True)
 
     # Process transcriptomics and residual results
     trans_results = pd.read_csv('../output/output_CPTAC/trans/paralog_tests_trans.csv', index_col=0)
@@ -55,13 +71,13 @@ def main():
     resid_results = resid_results.rename(columns={'p_adj': 'FDR'})
     resid_results['data_type'] = 'prot_residual'
 
-    supp_table6_other2_datasets = pd.concat([trans_results, resid_results])
-    supp_table6_other2_datasets['gene_pair_tested_in_dataset'] = supp_table6_other2_datasets['gene_pair'] + '_testedin_' + supp_table6_other2_datasets['data_type']
-    supp_table6_other2_datasets = supp_table6_other2_datasets.set_index('gene_pair_tested_in_dataset').reset_index()
-    supp_table6_other2_datasets.to_csv('../output/supp_tables/supplementary_table6_CPTAC_trans_and_resid_paralog_test_results.csv', index=True)
+    appendix_table6_other2_datasets = pd.concat([trans_results, resid_results])
+    appendix_table6_other2_datasets['gene_pair_tested_in_dataset'] = appendix_table6_other2_datasets['gene_pair'] + '_testedin_' + appendix_table6_other2_datasets['data_type']
+    appendix_table6_other2_datasets = appendix_table6_other2_datasets.set_index('gene_pair_tested_in_dataset').reset_index()
+    appendix_table6_other2_datasets.to_csv('../output/appendix_tables/appendix_table6_CPTAC_trans_and_resid_paralog_test_results.csv', index=True)
 
     # Process HAP1 biological annotations
-    supp_table7_HAP1_bioannots = pd.read_csv('../output/output_HAP1/HAP1_overlaps_categorical.csv', index_col=0).set_index('gene_pair').iloc[:, 10:].reset_index()
+    appendix_table7_HAP1_bioannots = pd.read_csv('../output/output_HAP1/HAP1_overlaps_categorical.csv', index_col=0).set_index('gene_pair').iloc[:, 10:].reset_index()
     all_screened_pairs = pd.read_csv("../data/for_overlap/all_screened_paralog_pairs_25_04_22.csv")
     all_screened_pairs = all_screened_pairs[['sorted_gene_pair', 'n_SL_thompson', 'n_SL_dede', 'n_SL_parrish', 'n_SL_chymera', 'n_SL_ito']]
 
@@ -78,23 +94,23 @@ def main():
         'famsize2': 'family_size2'
     }
 
-    supp_table7_HAP1_bioannots = clean_up_overlap_annots(supp_table7_HAP1_bioannots, consensus_SL=all_screened_pairs, renaming_dict=renaming_dict)
+    appendix_table7_HAP1_bioannots = clean_up_overlap_annots(appendix_table7_HAP1_bioannots, consensus_SL=all_screened_pairs, renaming_dict=renaming_dict)
     annotated_hap1 = pd.read_csv('../output/output_HAP1/HAP1_tested_pairs_annots.csv').drop(
         columns=['Unnamed: 0', 't_stat', 'p_val', 'p_values_adjusted', 'compensation', 'collateral_loss', 'logFC', 'dataset', 'FDR_threshold', 'sorted_gene_pair', 'A1', 'A2']).rename(columns={'category': 'HAP1_hit_type'})
 
-    supp_table7_HAP1_bioannots = supp_table7_HAP1_bioannots.merge(annotated_hap1, on='gene_pair')
-    supp_table7_HAP1_bioannots.to_csv('../output/supp_tables/supplementary_table7_allHAP1pairs_biological_info.csv')
+    appendix_table7_HAP1_bioannots = appendix_table7_HAP1_bioannots.merge(annotated_hap1, on='gene_pair')
+    appendix_table7_HAP1_bioannots.to_csv('../output/appendix_tables/appendix_table7_allHAP1pairs_biological_info.csv')
 
     # Process CPTAC biological annotations
-    supp_table8_CPTAC_bioannots = pd.read_csv('../output/output_CPTAC/prot/categorical_overlaps_prot.csv', index_col=0)
+    appendix_table8_CPTAC_bioannots = pd.read_csv('../output/output_CPTAC/prot/categorical_overlaps_prot.csv', index_col=0)
     annotated_cptac = pd.read_csv('../output/output_CPTAC/prot/all_quantoverlaps_prot.csv', index_col=0).drop(
         columns=['A1', 'A2', 'ols_p', 'ols_coef', 'n_A2_lost', 'lost_mean_quant', 'other_mean_quant', 'p_adj', 'compensation', 'collateral_loss', 'sorted_gene_pair']).rename(columns={'category': 'CPTAC_hit_type'})
-    supp_table8_CPTAC_bioannots = clean_up_overlap_annots(supp_table8_CPTAC_bioannots, consensus_SL=all_screened_pairs, renaming_dict=renaming_dict)
-    supp_table8_CPTAC_bioannots = supp_table8_CPTAC_bioannots.merge(annotated_cptac, on='gene_pair').set_index('gene_pair').reset_index()
+    appendix_table8_CPTAC_bioannots = clean_up_overlap_annots(appendix_table8_CPTAC_bioannots, consensus_SL=all_screened_pairs, renaming_dict=renaming_dict)
+    appendix_table8_CPTAC_bioannots = appendix_table8_CPTAC_bioannots.merge(annotated_cptac, on='gene_pair').set_index('gene_pair').reset_index()
 
-    prot_tested = supp_table5_CPTAC_A1A2.gene_pair.to_list()
-    protcomp = supp_table5_CPTAC_A1A2[supp_table5_CPTAC_A1A2.compensation].gene_pair.to_list()
-    protcl = supp_table5_CPTAC_A1A2[supp_table5_CPTAC_A1A2.collateral_loss].gene_pair.to_list()
+    prot_tested = appendix_table5_CPTAC_A1A2.gene_pair.to_list()
+    protcomp = appendix_table5_CPTAC_A1A2[appendix_table5_CPTAC_A1A2.compensation].gene_pair.to_list()
+    protcl = appendix_table5_CPTAC_A1A2[appendix_table5_CPTAC_A1A2.collateral_loss].gene_pair.to_list()
 
     trans_tested = trans_results.gene_pair.to_list()
     transcomp = trans_results[trans_results.compensation].gene_pair.to_list()
@@ -104,26 +120,26 @@ def main():
     residcomp = resid_results[resid_results.compensation].gene_pair.to_list()
     residcl = resid_results[resid_results.collateral_loss].gene_pair.to_list()
 
-    supp_table8_CPTAC_bioannots['prot_compensation'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in protcomp))
-    supp_table8_CPTAC_bioannots['prot_collateral_loss'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in protcl))
-    supp_table8_CPTAC_bioannots['trans_compensation'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in transcomp))
-    supp_table8_CPTAC_bioannots['trans_collateral_loss'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in transcl))
-    supp_table8_CPTAC_bioannots['resid_compensation'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in residcomp))
-    supp_table8_CPTAC_bioannots['resid_collateral_loss'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in residcl))
+    appendix_table8_CPTAC_bioannots['prot_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in protcomp))
+    appendix_table8_CPTAC_bioannots['prot_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in protcl))
+    appendix_table8_CPTAC_bioannots['trans_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in transcomp))
+    appendix_table8_CPTAC_bioannots['trans_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in transcl))
+    appendix_table8_CPTAC_bioannots['resid_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in residcomp))
+    appendix_table8_CPTAC_bioannots['resid_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: (x in residcl))
 
-    supp_table8_CPTAC_bioannots['other_dir_prot_compensation'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in protcomp if get_other_dir_genepair(x) in prot_tested else np.nan)
-    supp_table8_CPTAC_bioannots['other_dir_prot_collateral_loss'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in protcl if get_other_dir_genepair(x) in prot_tested else np.nan)
-    supp_table8_CPTAC_bioannots['other_dir_trans_compensation'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in transcomp if get_other_dir_genepair(x) in trans_tested else np.nan)
-    supp_table8_CPTAC_bioannots['other_dir_trans_collateral_loss'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in transcl if get_other_dir_genepair(x) in trans_tested else np.nan)
-    supp_table8_CPTAC_bioannots['other_dir_resid_compensation'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in residcomp if get_other_dir_genepair(x) in resid_tested else np.nan)
-    supp_table8_CPTAC_bioannots['other_dir_resid_collateral_loss'] = supp_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in residcl if get_other_dir_genepair(x) in resid_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_prot_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in protcomp if get_other_dir_genepair(x) in prot_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_prot_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in protcl if get_other_dir_genepair(x) in prot_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_trans_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in transcomp if get_other_dir_genepair(x) in trans_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_trans_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in transcl if get_other_dir_genepair(x) in trans_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_resid_compensation'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in residcomp if get_other_dir_genepair(x) in resid_tested else np.nan)
+    appendix_table8_CPTAC_bioannots['other_dir_resid_collateral_loss'] = appendix_table8_CPTAC_bioannots['gene_pair'].apply(lambda x: get_other_dir_genepair(x) in residcl if get_other_dir_genepair(x) in resid_tested else np.nan)
 
-    supp_table8_CPTAC_bioannots.to_csv('../output/supp_tables/supplementary_table8_allCPTACpairs_biological_info.csv')
+    appendix_table8_CPTAC_bioannots.to_csv('../output/appendix_tables/appendix_table8_allCPTACpairs_biological_info.csv')
 
     # Process CPTAC Fisher's Exact Test results
-    supp_table9_CPTAC_FET = pd.read_csv('../output/output_CPTAC/prot/categorical_FETs_uniquegenepairs_prot.csv', index_col=0)
-    supp_table9_CPTAC_FET['interaction_dataset'] = supp_table9_CPTAC_FET['interaction_dataset'].apply(lambda x: renaming_dict[x] if x in renaming_dict.keys() else x)
-    supp_table9_CPTAC_FET['dataset'] = 'proteomics'
+    appendix_table9_CPTAC_FET = pd.read_csv('../output/output_CPTAC/prot/categorical_FETs_uniquegenepairs_prot.csv', index_col=0)
+    appendix_table9_CPTAC_FET['interaction_dataset'] = appendix_table9_CPTAC_FET['interaction_dataset'].apply(lambda x: renaming_dict[x] if x in renaming_dict.keys() else x)
+    appendix_table9_CPTAC_FET['dataset'] = 'proteomics'
 
     trans_FET = pd.read_csv('../output/output_CPTAC/trans/categorical_FETs_uniquegenepairs_trans.csv', index_col=0)
     trans_FET['interaction_dataset'] = trans_FET['interaction_dataset'].apply(lambda x: renaming_dict[x] if x in renaming_dict.keys() else x)
@@ -133,16 +149,70 @@ def main():
     resid_FET['interaction_dataset'] = resid_FET['interaction_dataset'].apply(lambda x: renaming_dict[x] if x in renaming_dict.keys() else x)
     resid_FET['dataset'] = 'prot_residual'
 
-    supp_table9_CPTAC_FET = pd.concat([supp_table9_CPTAC_FET, trans_FET, resid_FET])
-    supp_table9_CPTAC_FET.to_csv('../output/supp_tables/supplementary_table9_allCPTAC_categorical_overlaptests.csv', index=True)
+    appendix_table9_CPTAC_FET = pd.concat([appendix_table9_CPTAC_FET, trans_FET, resid_FET])
+    appendix_table9_CPTAC_FET.to_csv('../output/appendix_tables/appendix_table9_allCPTAC_categorical_overlaptests.csv', index=True)
 
     # Process CPTAC t-test results
-    supp_table10_CPTAC_tt = pd.read_csv('../output/output_CPTAC/prot/quantitative_ttests_foroverlaps_prot.csv', index_col=0)
-    supp_table10_CPTAC_tt['dataset'] = 'proteomics'
-    supp_table10_CPTAC_tt = supp_table10_CPTAC_tt.drop(columns='colname').set_index('Variable').reset_index().rename(columns={'Variable': 'variable'})
-    supp_table10_CPTAC_tt.to_csv('../output/supp_tables/supplementary_table10_allCPTAC_quantitative_overlaptests.csv', index=True)
-
-    print('Done!')
+    appendix_table10_CPTAC_tt = pd.read_csv('../output/output_CPTAC/prot/quantitative_ttests_foroverlaps_prot.csv', index_col=0)
+    appendix_table10_CPTAC_tt['dataset'] = 'proteomics'
+    appendix_table10_CPTAC_tt = appendix_table10_CPTAC_tt.drop(columns='colname').set_index('Variable').reset_index().rename(columns={'Variable': 'variable'})
+    appendix_table10_CPTAC_tt.to_csv('../output/appendix_tables/appendix_table10_allCPTAC_quantitative_overlaptests.csv', index=True)
+    
+    # Create a multi-sheet Excel file
+    print('Creating multi-sheet Excel file...')
+    
+    # Load all tables
+    tables = [
+        appendix_table1_HAP1_protdata.reset_index(),
+        appendix_table2_HAP1_A2A2,
+        appendix_table3_HAP1_A1A2,
+        appendix_table4_CPTAC_A2A2,
+        appendix_table5_CPTAC_A1A2,
+        appendix_table6_other2_datasets,
+        appendix_table7_HAP1_bioannots,
+        appendix_table8_CPTAC_bioannots,
+        appendix_table9_CPTAC_FET,
+        appendix_table10_CPTAC_tt
+    ]
+    
+    # Create a new Excel workbook
+    wb = Workbook()
+    
+    # Create Introduction sheet
+    intro_sheet = wb.active
+    intro_sheet.title = "Introduction"
+    
+    # Add descriptions to Introduction sheet
+    for i, description in enumerate(table_descriptions, 1):
+        intro_sheet.cell(row=i, column=1, value=description)
+    
+    # Create sheets for each table
+    sheet_names = [
+        "Table S1",
+        "Table S2",
+        "Table S3",
+        "Table S4",
+        "Table S5",
+        "Table S6",
+        "Table S7",
+        "Table S8",
+        "Table S9",
+        "Table S10"
+    ]
+    
+    # Add tables to sheets
+    for i, (table, sheet_name) in enumerate(zip(tables, sheet_names)):
+        # Create new sheet
+        ws = wb.create_sheet(title=sheet_name)
+        
+        # Add data from dataframe
+        for r_idx, row in enumerate(dataframe_to_rows(table, index=False, header=True), 1):
+            for c_idx, value in enumerate(row, 1):
+                ws.cell(row=r_idx, column=c_idx, value=value)
+    
+    # Save the workbook
+    wb.save('../output/appendix_tables/appendix_tables.xlsx')
+    print('Done! Excel file saved to ../output/appendix_tables/appendix_tables.xlsx')
 
 if __name__ == '__main__':
     main()
