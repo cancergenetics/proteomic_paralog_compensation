@@ -23,7 +23,13 @@ def run_test(pair, lost, quants, lin, how, cn_df, runwith):
             df = df.merge(cn_sliced, on = 'sample_ID', how = 'inner')
         if df.shape[0]!=0:
             if how == 'A2': # We're running self i.e. A2-A2 tests to confirm that loss is associated with a drop in protein abundance
-                ols_results = smf.ols('quant ~ C(A2_lost) + C(lineage)', data=df).fit() # Cancer type/lineage is a covariate for the self-test
+                if how in ['brca', 'ovca']:
+                     model = 'quant ~ C(A2_lost)'
+                else:
+                     model = 'quant ~ C(A2_lost) + C(lineage)'
+
+                ols_results = smf.ols(model, data=df).fit() # Cancer type/lineage is a covariate for the self-test
+            
             elif how == 'A1':
                 if runwith in ['prot', 'trans']:
                     model = 'quant ~ C(A2_lost) + C(lineage) + CNV' # Cancer type/lineage and self-copy number are covariates for the paralog test
