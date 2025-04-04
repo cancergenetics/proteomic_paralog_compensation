@@ -6,7 +6,7 @@ def load_and_process_data(runwith='prot', nb_workers = 1, overlap_only=False):
     Load and preprocess the required datasets.
     
     Parameters:
-    - runwith: Specifies which dataset to load ('prot', 'trans', 'prot_residual')
+    - runwith: Specifies which dataset to load ('prot', 'trans', 'prot_residual', 'brca', 'ovca')
     - overlap_only: If True, only load and return the overlap dataframes
     
     Returns:
@@ -207,9 +207,9 @@ def load_and_process_data(runwith='prot', nb_workers = 1, overlap_only=False):
     gtex_data = gtex_data.reset_index()[['gene_name', 'mean']]
 
     dfs_for_quant_overlap = (string_physical, biogrid, conservation_scores, prot_hl, interface_df, gtex_data)
-    print(f'data df final shape is : {data_df.shape}')
-
+    
     if overlap_only:
         return dfs_for_cat_overlap, dfs_for_quant_overlap
     else:
+        print(f'data df final shape is : {data_df.shape}')
         return (data_df, cndf, sample_info, all_pairs), dfs_for_cat_overlap, dfs_for_quant_overlap
