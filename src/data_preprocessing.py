@@ -1,12 +1,12 @@
 import pandas as pd
 import numpy as np
 
-def load_and_process_data(runwith='prot', overlap_only=False):
+def load_and_process_data(runwith='prot', nb_workers = 1, overlap_only=False):
     """
     Load and preprocess the required datasets.
     
     Parameters:
-    - runwith: Specifies which dataset to load ('prot', 'trans', or 'prot_residual')
+    - runwith: Specifies which dataset to load ('prot', 'trans', 'prot_residual')
     - overlap_only: If True, only load and return the overlap dataframes
     
     Returns:
@@ -15,31 +15,56 @@ def load_and_process_data(runwith='prot', overlap_only=False):
     If overlap_only is True:
         (dfs_for_cat_overlap, dfs_for_quant_overlap)
     """
+    if nb_workers>1:
+        from pandarallel import pandarallel
+        pandarallel.initialize(nb_workers=nb_workers, progress_bar=True)
     if not overlap_only:
         print('Loading in data...')
         if runwith == 'prot':
             data_path = '../data/CPTAC/CPTAC_PanCan_proteomics.parquet'
+            cn_path = '../data/CPTAC/CPTAC_gistic_cn.csv'
+            sample_info_path = '../data/CPTAC/CPTAC_sampleinfo.csv'
         elif runwith == 'trans':
             data_path = '../data/CPTAC/CPTAC_PanCan_transcriptomics.parquet'
+            cn_path = '../data/CPTAC/CPTAC_gistic_cn.csv'
+            sample_info_path = '../data/CPTAC/CPTAC_sampleinfo.csv'
         elif runwith == 'prot_residual':
             data_path = '../data/CPTAC/CPTAC_prot_residuals.csv'
-        cn_path = '../data/CPTAC/CPTAC_gistic_cn.csv'
-        sample_info_path = '../data/CPTAC/CPTAC_sampleinfo.csv'
+            cn_path = '../data/CPTAC/CPTAC_gistic_cn.csv'
+            sample_info_path = '../data/CPTAC/CPTAC_sampleinfo.csv'
         
         print('Loading in sample info...')
-        sample_info = pd.read_csv(sample_info_path).rename(
-            columns={
-                "Unnamed: 0": "sample_ID",
-                "DepMapID": "sample_ID",
-                "Study": "lineage"
-            }
-        )[["sample_ID", "lineage"]]
-
-        print(f'Loading in {runwith} data...')
-        if 'parquet' in data_path:
-            data_df = pd.read_parquet(data_path)
-        elif 'csv' in data_path:
+        if runwith in ['brca', 'ovca']:
+            # Read data first to get sample IDs
+            print(f'Loading in {runwith} data...')
             data_df = pd.read_csv(data_path, index_col=0, low_memory=False)
+            # Generate sample info
+            sample_info = pd.DataFrame({
+                'sample_ID': data_df.index,
+                'lineage': runwith
+            })
+        else:
+            sample_info = pd.read_csv(sample_info_path).rename(
+                columns={
+                    "Unnamed: 0": "sample_ID",
+                    "DepMapID": "sample_ID",
+                    "Study": "lineage"
+                }
+            )[["sample_ID", "lineage"]]
+
+            def fix_sampleids(x):
+                if x[0] == 'X':
+                    return x[1:]
+                else:
+                    return x 
+            
+            sample_info['sample_ID'] = sample_info['sample_ID'].apply(lambda x: fix_sampleids(x))
+
+            print(f'Loading in {runwith} data...')
+            if 'parquet' in data_path:
+                data_df = pd.read_parquet(data_path)
+            elif 'csv' in data_path:
+                data_df = pd.read_csv(data_path, index_col=0, low_memory=False)
 
         if runwith == 'prot_residual':
             data_df = data_df[['gene_in_sample', 'Residuals']]
@@ -105,8 +130,26 @@ def load_and_process_data(runwith='prot', overlap_only=False):
     mapping['entrez_id'] = mapping['entrez_id'].astype(int).astype(str)
     mapping = mapping.set_index('entrez_id')[['gene_symbol']]
     scores_filtered.columns = scores_filtered.columns.map(lambda x: get_gene_name(x, mapping)).astype(str)
+    regulons = pd.read_csv('../data/for_overlap/dorothea_regulons.csv')
+    biogrid = pd.read_csv('../data/for_overlap/biogrid_full.tsv', sep = '\t')
+    biogrid = biogrid[(biogrid['Taxid Interactor A'] == 'taxid:9606') & (biogrid['Taxid Interactor B'] == 'taxid:9606')]
 
-    dfs_for_cat_overlap = (CRISPR_compensation, corum_with_symbols, ebi2, humap2, all_screened_pairs, scores_filtered, all_pairs)
+    biogrid = biogrid[biogrid['Interaction Detection Method'] != 'psi-mi:"MI:0254"(genetic interference)'].rename(columns = {'#ID Interactor A':'entA', 'ID Interactor B':'entB', 'Interaction Detection Method':'method'}) 
+    biogrid['entA'] = biogrid['entA'].apply(lambda x: x.split(':')[1])
+    biogrid['entB'] = biogrid['entB'].apply(lambda x: x.split(':')[1])
+    ent_map = pd.read_csv('../data/general/geneidmap_sep24.txt', sep = '\t').rename(columns = {'NCBI Gene ID(supplied by NCBI)':'ent', 'Approved symbol':'gene_name'})
+    ent_map = ent_map[['gene_name','ent']].dropna()
+    ent_map['ent'] = ent_map['ent'].apply(lambda x: str(int(x)))
+    ent_dict = ent_map.set_index('ent').to_dict()['gene_name']
+    biogrid['gene_A'] = biogrid['entA'].parallel_apply(lambda x: ent_dict[x] if x in list(ent_dict.keys()) else x)
+    biogrid['gene_B'] = biogrid['entB'].parallel_apply(lambda x: ent_dict[x] if x in list(ent_dict.keys()) else x)
+    direct_types = ['two hybrid',  'pull down',  'biochemical',  'protein complementation assay',  'far western blotting']
+    biogrid['method'] = biogrid['method'].apply(lambda x: x.split('(')[1][:-1])
+    biogrid_direct = biogrid[biogrid['method'].isin(direct_types)]
+    biogrid_direct = biogrid_direct[['gene_A', 'gene_B']]
+    biogrid = biogrid[['gene_A', 'gene_B']]
+
+    dfs_for_cat_overlap = (CRISPR_compensation, corum_with_symbols, ebi2, humap2, regulons, biogrid_direct, all_screened_pairs, scores_filtered, all_pairs)
 
     # Need the rest of these to calculate quantitative overlaps with t-tests
     biomart_enspmap = pd.read_csv('../data/general/biomart.txt', sep ='\t')
@@ -125,16 +168,46 @@ def load_and_process_data(runwith='prot', overlap_only=False):
     
     string_physical = pd.read_csv('../data/for_overlap/9606.protein.physical.links.v12.0.txt', sep = ' ')
     string_physical = map_string(string_physical, map_dict = mapdict)
-    biogrid = pd.read_csv('../data/for_overlap/biogrid_full.tsv', sep = '\t')
-    biogrid = biogrid[biogrid['Interaction Detection Method'] != 'psi-mi:"MI:0254"(genetic interference)']
-    biogrid['gene_A'] = biogrid['Alt IDs Interactor A'].apply(lambda x:x.split('locuslink:')[1].split('|')[0])
-    biogrid['gene_B'] = biogrid['Alt IDs Interactor B'].apply(lambda x:x.split('locuslink:')[1].split('|')[0])
-    biogrid = biogrid[['gene_A', 'gene_B']]
-
     conservation_scores = pd.read_csv('../data/for_overlap/ens111_humanGene_phylogeneticProfile_1472Sp.csv')
     conservation_scores = conservation_scores[['gene', 'total']].set_index('gene')
-     
-    dfs_for_quant_overlap = (string_physical, biogrid, conservation_scores)
+    prot_hl = pd.read_excel('../data/for_overlap/prot_half_life.xlsx', sheet_name = 1)
+    prot_hl = prot_hl[['Gene name(s)', 'T1/2 [h]',]].rename(columns = {'Gene name(s)':'gene_name', 'T1/2 [h]':'hl'})
+    prot_hl['hl'] = prot_hl['hl'].replace('inf.', 'inf').astype(float)
+    prot_hl['hl_logged'] = prot_hl['hl'].apply(lambda x: np.log10(x))
+    janes = pd.read_csv('../data/for_overlap/suppl_ppi_models_.tsv', sep = '\t')
+    janes= janes[janes.pdockq>0.5]
+    idmap= pd.read_csv('../data/general/geneidmap_sep24.txt', sep = '\t').rename(columns = {'UniProt ID(supplied by UniProt)':'upid','Approved symbol':'gene_name'})[['gene_name','upid']].dropna()
+    idict=idmap.set_index('upid').to_dict()['gene_name']
+    janes['gene1'] = janes['uniprot_id1'].apply(lambda x: idict[x] if x in idict.keys() else x)
+    janes['gene2'] = janes['uniprot_id2'].apply(lambda x: idict[x] if x in idict.keys() else x)
+    janes['gene_pair'] = janes['gene1'] + '_' + janes['gene2']
+    janes= janes.dropna()
+    janes['sorted_gene_pair'] = janes['gene_pair'].apply(lambda x: '_'.join(sorted(x.split('_'))))
+    df1 = pd.DataFrame({'protein': janes['gene1'], 'residues': janes['ifresid1'].str.split(',')}).explode('residues')
+    df2 = pd.DataFrame({'protein': janes['gene2'], 'residues': janes['ifresid2'].str.split(',')}).explode('residues')
+    interface_df = pd.concat([df1, df2]).drop_duplicates().groupby('protein').size().reset_index(name='interface_residues').sort_values('interface_residues', ascending=False)
+    
+    gtex_data = pd.read_excel('../data/for_overlap/Table_S1_gene_info_at_protein_level.xlsx', sheet_name = 5)
+    gtex_data.columns = gtex_data.iloc[0]
+    gtex_data = gtex_data.drop(0).reset_index(drop=True)
+    gtex_data = gtex_data.iloc[1:,:]
+    gtex_data = gtex_data.iloc[1:,:]
+    gtex_data = gtex_data.rename(columns={gtex_data.columns[1]: 'ensembl_id'})
+    gtex_data = gtex_data.iloc[:,1:]
+    gtex_data.drop(columns = 'reference',inplace = True)
+
+    ensembl_mapping = pd.read_csv('../data/general/ensembl_mapping.txt', sep = '\t')
+    ensembl_mapping = ensembl_mapping[['Approved symbol', 'Ensembl ID(supplied by Ensembl)']].rename(columns = {'Approved symbol':'gene_name', 'Ensembl ID(supplied by Ensembl)':'ensembl_id'})
+    ensembl_mapping = ensembl_mapping.dropna().set_index('ensembl_id')
+    ensembl_mapping.reset_index(inplace  = True)
+
+    gtex_data = gtex_data.merge(ensembl_mapping, on = 'ensembl_id', how = 'inner')
+    gtex_data = gtex_data.drop(columns = 'ensembl_id').set_index('gene_name')
+    gtex_data['mean'] = gtex_data.mean(axis = 1)
+    gtex_data = gtex_data.reset_index()[['gene_name', 'mean']]
+
+    dfs_for_quant_overlap = (string_physical, biogrid, conservation_scores, prot_hl, interface_df, gtex_data)
+    print(f'data df final shape is : {data_df.shape}')
 
     if overlap_only:
         return dfs_for_cat_overlap, dfs_for_quant_overlap
