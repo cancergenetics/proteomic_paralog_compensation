@@ -19,6 +19,17 @@ def get_pairs_to_test(pairs, runwith, cndf, only_run_HAP1_pairs=False,
         pairs_in_quant_and_CN.min_seq_id >= seq_id_thresh]
     pairs_in_quant_and_CN_minseq_maxfam = pairs_in_quant_and_CN_minseq[
         pairs_in_quant_and_CN_minseq.family_size <= fam_size_thresh]
+    
+    if runwith == 'prot':
+        same_chr_pairs = pairs_in_quant_and_CN_minseq_maxfam[
+            pairs_in_quant_and_CN_minseq_maxfam.same_chr == True]
+        
+        print(f"\n=== SAME-CHROMOSOME EXCLUSION STATISTICS ===")
+        print(f"Number of same-chromosome pairs being excluded: {len(same_chr_pairs)}")
+        print(f"Percentage of pairs excluded due to same-chromosome: {(len(same_chr_pairs)/len(pairs_in_quant_and_CN_minseq_maxfam))*100:.2f}%")
+        print(f"===============================================\n")
+    
+    # Continue with original filtering
     pairs_in_quant_and_CN_minseq_maxfam_diffchr = (
         pairs_in_quant_and_CN_minseq_maxfam[
             pairs_in_quant_and_CN_minseq_maxfam.same_chr == False
