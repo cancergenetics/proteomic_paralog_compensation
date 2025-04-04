@@ -6,6 +6,9 @@ from data_preprocessing import load_and_process_data
 from generate_overlaps import generate_overlaps
 from copy import deepcopy
 import csv
+from pandarallel import pandarallel
+
+pandarallel.initialize(nb_workers = 20, progress_bar = True) # can reduce
 
 
 def map_uniprot_to_symbol(uniprot, mapping):
@@ -78,6 +81,29 @@ def process_proteomics_data(
     return short_data
 
 
+def calculate_cohens_d(group1, group2):
+    group1 = [x for x in group1 if not np.isnan(x)]
+    group2 = [x for x in group2 if not np.isnan(x)]
+    
+    if len(group1) == 0 or len(group2) == 0:
+        return np.nan
+    
+    mean1 = np.mean(group1)
+    mean2 = np.mean(group2)
+    
+    var1 = np.var(group1, ddof=1)
+    var2 = np.var(group2, ddof=1)
+    
+    pooled_sd = np.sqrt(
+        ((len(group1) - 1) * var1 + (len(group2) - 1) * var2) / 
+        (len(group1) + len(group2) - 2)
+    )
+    
+    cohens_d = (mean1 - mean2) / pooled_sd if pooled_sd > 0 else 0
+    
+    return cohens_d
+
+
 def run_ttest_for_clone(gene, df):
     gene_old = deepcopy(gene)
     gene = gene.split('_')[0]
@@ -86,9 +112,11 @@ def run_ttest_for_clone(gene, df):
         gene_index = genelist[0]
         KO_quants = df[(df.index == gene_index)][[x for x in df.columns.to_list() if gene_old in x]].iloc[0].values.tolist()
         WT_quants = df[(df.index == gene_index)][[x for x in df.columns.to_list() if 'WT_' in x]].iloc[0].values.tolist()
-        return stats.ttest_ind(KO_quants, WT_quants, equal_var=True)
+        cohens_d = calculate_cohens_d(KO_quants, WT_quants)
+        ttest_result = stats.ttest_ind(KO_quants, WT_quants, equal_var=True)
+        return [ttest_result[0], ttest_result[1], cohens_d]
     else:
-        return [np.nan, np.nan]
+        return [np.nan, np.nan, np.nan]
 
 
 def calculate_logFC(data, key):
@@ -146,9 +174,11 @@ def run_ttest_for_paralog(genepair, A2_df_input, A2_df_input_agg, df):
         gene_index = genelist[0]
         KO_quants = df[(df.index == gene_index)][[x for x in df.columns.to_list() if gene in x]].iloc[0].values.tolist()
         WT_quants = df[(df.index == gene_index)][[x for x in df.columns.to_list() if 'WT_' in x]].iloc[0].values.tolist()
-        return stats.ttest_ind(KO_quants, WT_quants, equal_var=True)
+        cohens_d = calculate_cohens_d(KO_quants, WT_quants)
+        ttest_result = stats.ttest_ind(KO_quants, WT_quants, equal_var=True)
+        return [ttest_result[0], ttest_result[1], cohens_d]
     else:
-        return [np.nan, np.nan]
+        return [np.nan, np.nan, np.nan]
 
 
 def main():
@@ -192,8 +222,12 @@ def main():
     all_clones = [x for x in all_clones if 'ASF1' not in x]
 
     A2_df = pd.DataFrame(all_clones).rename(columns={0: 'A2'})
+    
+    # Modified to include Cohen's d
     A2_df['t_stat'] = A2_df.A2.apply(lambda x: run_ttest_for_clone(x, df=HAP1_prot_renamed)[0])
     A2_df['p_val'] = A2_df.A2.apply(lambda x: run_ttest_for_clone(x, df=HAP1_prot_renamed)[1])
+    A2_df['cohens_d'] = A2_df.A2.apply(lambda x: run_ttest_for_clone(x, df=HAP1_prot_renamed)[2])
+    
     A2_df = A2_df.dropna(subset='p_val')
     A2_df['p_values_adjusted'] = multipletests(A2_df['p_val'], method='fdr_bh')[1]
     A2_df['sig'] = (A2_df['p_val'] < 0.05) & (A2_df['t_stat'] < 0)
@@ -214,6 +248,7 @@ def main():
     A2_df_wclones = deepcopy(A2_df)
     A2_df = group_A2_clones(A2_df)
     A2_df['logFC'] = A2_df['logFC'].apply(lambda x: round(x, 3))
+    A2_df['cohens_d'] = A2_df['cohens_d'].apply(lambda x: round(x, 3) if not pd.isna(x) else x)
     valKOs = A2_df[A2_df.sig == True].A2.to_list()
 
     all_pairs = pd.read_csv('../data/general/all_pairs_wsexchr.csv', index_col=0)
@@ -226,8 +261,12 @@ def main():
     pairs_to_test = [f'{x}_{k}' for k, v in val_paralogs.items() for x in v]
 
     A1A2_df = pd.DataFrame(pairs_to_test).rename(columns={0: 'gene_pair'})
+    
+    # Modified to include Cohen's d
     A1A2_df['t_stat'] = A1A2_df.gene_pair.apply(lambda x: run_ttest_for_paralog(x, df=HAP1_prot_renamed, A2_df_input=A2_df_wclones, A2_df_input_agg=A2_df)[0])
     A1A2_df['p_val'] = A1A2_df.gene_pair.apply(lambda x: run_ttest_for_paralog(x, df=HAP1_prot_renamed, A2_df_input=A2_df_wclones, A2_df_input_agg=A2_df)[1])
+    A1A2_df['cohens_d'] = A1A2_df.gene_pair.apply(lambda x: run_ttest_for_paralog(x, df=HAP1_prot_renamed, A2_df_input=A2_df_wclones, A2_df_input_agg=A2_df)[2])
+    
     A1A2_df = A1A2_df.dropna(subset='p_val')
     A1A2_df['p_values_adjusted'] = multipletests(A1A2_df['p_val'], method='fdr_bh')[1]
     A1A2_df['compensation'] = (A1A2_df['p_values_adjusted'] < 0.05) & (A1A2_df['p_val'] < 0.05) & (A1A2_df['t_stat'] > 0)
@@ -242,18 +281,18 @@ def main():
         elif len(splitlist) == 3:
             A2 = splitlist[1] + '_' + splitlist[2]
         genelist = [x for x in HAP1_prot_renamed.index.to_list() if ((f';{A1}' in x) or (f'{A1};' in x) or (x == A1))]
-        if len(genelist)>0:
+        if len(genelist) > 0:
             gene_index = genelist[0]
-        KO_samples = [x for x in HAP1_prot_renamed.columns.to_list() if A2 in x]
-        KO_quants = HAP1_prot_renamed[(HAP1_prot_renamed.index == gene_index)][KO_samples].iloc[0].values.tolist()
-        WT_quants = HAP1_prot_renamed[(HAP1_prot_renamed.index == gene_index)][[x for x in HAP1_prot_renamed.columns.to_list() if 'WT_' in x]].iloc[0].values.tolist()
-        KO_quants = [x for x in KO_quants if np.isnan(x) == False]
-        WT_quants = [x for x in WT_quants if np.isnan(x) == False]
-        data[pair] = KO_quants, WT_quants
-        A1A2_df['logFC'] = A1A2_df['gene_pair'].apply(lambda key: calculate_logFC(data, key))
-        A1A2_df['logFC'] = A1A2_df['logFC'].round(3)
+            KO_samples = [x for x in HAP1_prot_renamed.columns.to_list() if A2 in x]
+            KO_quants = HAP1_prot_renamed[(HAP1_prot_renamed.index == gene_index)][KO_samples].iloc[0].values.tolist()
+            WT_quants = HAP1_prot_renamed[(HAP1_prot_renamed.index == gene_index)][[x for x in HAP1_prot_renamed.columns.to_list() if 'WT_' in x]].iloc[0].values.tolist()
+            KO_quants = [x for x in KO_quants if np.isnan(x) == False]
+            WT_quants = [x for x in WT_quants if np.isnan(x) == False]
+            data[pair] = KO_quants, WT_quants
 
     A1A2_df['logFC'] = A1A2_df['gene_pair'].apply(lambda key: calculate_logFC(data, key))
+    A1A2_df['logFC'] = A1A2_df['logFC'].round(3)
+    A1A2_df['cohens_d'] = A1A2_df['cohens_d'].apply(lambda x: round(x, 3) if not pd.isna(x) else x)
 
     print(f'Final processed HAP1 proteomics dataset has {HAP1_prot_renamed.shape[0]} proteins and {HAP1_prot_renamed.shape[1]} unique samples incl WTs.')
     print(f'{len(A2_df)} A2s tested, {len(A2_df[A2_df.sig])} validate.')
