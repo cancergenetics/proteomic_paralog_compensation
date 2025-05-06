@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from openpyxl import Workbook
 from openpyxl.utils.dataframe import dataframe_to_rows
+import os
 
 def main():
 
@@ -20,24 +21,27 @@ def main():
 
     print('Formatting appendix tables...')
 
+    # Create EV_datasets directory if it doesn't exist
+    os.makedirs('../output/EV_datasets', exist_ok=True)
+    
     # Define table descriptions for the introduction sheet
     table_descriptions = [
-        "**Appendix Table S1: Processed HAP1 proteomic data** HAP1 proteomic data from 34 paralog knockouts, processed as outlined in the Methods.",
-        "**Appendix Table S2: All self-abundance HAP1 tests** T-statistic, log fold change, p-values and FDRs are for a comparison of protein abundance when the gene has been knocked out, versus its abundance in the wild-type. \"drop_in_KO\" contains information on whether the gene passed the test.",
-        "**Appendix Table S3: All paralog HAP1 tests** T-statistic, log fold change, p-values and FDRs are for a comparison of protein abundance when its paralog has been knocked out, versus its abundance in the wild-type. \"compensation\" and \"collateral_loss\" contain information on whether each paralog is a compensation or collateral loss hit (see Methods).",
-        "**Appendix Table S4 : All self-abundance CPTAC tests**: Ordinary least squares regression models were fit for each testable protein to explain its abundance using its own hemizygous loss status across CPTAC samples, with lineage/study as a covariate. OLS coefficients, p-values (i.e. Two-tailed p values for the t-statistic for the A2 loss variable), FDRs (Benjamini Hochberg multiple testing correction applied to p-values), mean values when lost vs. when not lost, number of samples a gene has been lost in, and whether or not loss is significantly (p-value < 0.05) associated with drop in protein abundance.",
-        "**Appendix Table S5: CPTAC proteomic results** All paralog CPTAC tests. Ordinary least squares regression models were fit for each testable protein to explain its abundance using its paralog's hemizygous loss status across CPTAC samples, with lineage/study as a covariate. OLS coefficients, p-values (i.e. t-statistics for the loss variable), FDRs (Benjamini Hochberg multiple testing correction applied to pvalues), mean values when lost vs. when not lost, and OLS model r-squared values, number of samples a gene has been lost in, and whether or not paralog loss is significantly (FDR < 5% and uncorrected p-value < 0.05) associated with change in protein abundance (compensation or collateral_loss).",
-        "**Appendix Table S6: CPTAC transcriptomic and protein residual results** Results of the above analysis run using transcriptomic data rather than proteomic data, as well as results with protein residuals, i.e. a version of the proteomic dataset where lineage and self-transcript effects have been regressed out (by fitting separate ordinary least squares models for each protein, see Methods).",
-        "**Appendix Table S7: Biological information for all HAP1 pairs** Information about protein complex membership, closest pair status, sequence identity, family size, Jaccard index, degree centrality, conservation score, and synthetic lethality for all paralog pairs tested using HAP1 data.",
-        "**Appendix Table S8: Biological information for all CPTAC pairs** Information about protein complex membership, closest pair status, sequence identity, family size, Jaccard index, degree centrality, conservation score, and synthetic lethality for all paralog pairs tested using CPTAC data.",
-        "**Appendix Table S9: All Fishers Exact Test results (categorical overlap tests) for CPTAC pairs** Results of all Fishers Exact Tests run to identify overlap between CPTAC compensation and collateral loss status and various categorical biological characteristics including synthetic lethality, protein complex membership, closest pair status, and family size 2 (i.e no other paralogs in the family) as described in the methods.",
-        "**Appendix Table S10: All t-test results (quantitative overlap tests) for CPTAC pairs** Results of t-tests run to identify enrichment in CPTAC hits for quantitative biological characteristics such as sequence identity, family size, Jaccard index, degree centrality of lost gene, essentiality of the neighbours of the lost gene, and conservation scores."
+        "**Dataset EV1: Processed HAP1 proteomic data** HAP1 proteomic data from 34 paralog knockouts, processed as outlined in the Methods.",
+        "**Dataset EV2: All self-abundance HAP1 tests** T-statistic, log fold change, p-values and FDRs are for a comparison of protein abundance when the gene has been knocked out, versus its abundance in the wild-type. \"drop_in_KO\" contains information on whether the gene passed the test.",
+        "**Dataset EV3: All paralog HAP1 tests** T-statistic, log fold change, p-values and FDRs are for a comparison of protein abundance when its paralog has been knocked out, versus its abundance in the wild-type. \"compensation\" and \"collateral_loss\" contain information on whether each paralog is a compensation or collateral loss hit (see Methods).",
+        "**Dataset EV4: All self-abundance CPTAC tests**: Ordinary least squares regression models were fit for each testable protein to explain its abundance using its own hemizygous loss status across CPTAC samples, with lineage/study as a covariate. OLS coefficients, p-values (i.e. Two-tailed p values for the t-statistic for the A2 loss variable), FDRs (Benjamini Hochberg multiple testing correction applied to p-values), mean values when lost vs. when not lost, number of samples a gene has been lost in, and whether or not loss is significantly (p-value < 0.05) associated with drop in protein abundance.",
+        "**Dataset EV5: CPTAC proteomic results** All paralog CPTAC tests. Ordinary least squares regression models were fit for each testable protein to explain its abundance using its paralog's hemizygous loss status across CPTAC samples, with lineage/study as a covariate. OLS coefficients, p-values (i.e. t-statistics for the loss variable), FDRs (Benjamini Hochberg multiple testing correction applied to pvalues), mean values when lost vs. when not lost, and OLS model r-squared values, number of samples a gene has been lost in, and whether or not paralog loss is significantly (FDR < 5% and uncorrected p-value < 0.05) associated with change in protein abundance (compensation or collateral_loss).",
+        "**Dataset EV6: CPTAC transcriptomic and protein residual results** Results of the above analysis run using transcriptomic data rather than proteomic data, as well as results with protein residuals, i.e. a version of the proteomic dataset where lineage and self-transcript effects have been regressed out (by fitting separate ordinary least squares models for each protein, see Methods).",
+        "**Dataset EV7: Biological information for all HAP1 pairs** Information about protein complex membership, closest pair status, sequence identity, family size, Jaccard index, degree centrality, conservation score, and synthetic lethality for all paralog pairs tested using HAP1 data.",
+        "**Dataset EV8: Biological information for all CPTAC pairs** Information about protein complex membership, closest pair status, sequence identity, family size, Jaccard index, degree centrality, conservation score, and synthetic lethality for all paralog pairs tested using CPTAC data.",
+        "**Dataset EV9: All Fishers Exact Test results (categorical overlap tests) for CPTAC pairs** Results of all Fishers Exact Tests run to identify overlap between CPTAC compensation and collateral loss status and various categorical biological characteristics including synthetic lethality, protein complex membership, closest pair status, and family size 2 (i.e no other paralogs in the family) as described in the methods.",
+        "**Dataset EV10: All t-test results (quantitative overlap tests) for CPTAC pairs** Results of t-tests run to identify enrichment in CPTAC hits for quantitative biological characteristics such as sequence identity, family size, Jaccard index, degree centrality of lost gene, essentiality of the neighbours of the lost gene, and conservation scores."
     ]
 
     # Read and process HAP1 proteomics data
     appendix_table1_HAP1_protdata = pd.read_csv('../output/output_HAP1/HAP1_prot_renamed.csv')
     appendix_table1_HAP1_protdata = appendix_table1_HAP1_protdata.rename(columns={'gene_name': 'gene_symbols'}).set_index('gene_symbols')
-    appendix_table1_HAP1_protdata.to_csv('../output/supp_tables/appendix_table1_HAP1_proteomics.csv', index=True)
+    appendix_table1_HAP1_protdata.to_csv('../output/appendix_tables/appendix_table1_HAP1_proteomics.csv', index=True)
 
     # Process HAP1 self-test results
     appendix_table2_HAP1_A2A2 = pd.read_csv('../output/output_HAP1/HAP1_selftest_results.csv', index_col=0)
@@ -46,7 +50,7 @@ def main():
     # Ensure boolean columns stay as strings when saving
     if 'drop_in_KO' in appendix_table2_HAP1_A2A2.columns:
         appendix_table2_HAP1_A2A2['drop_in_KO'] = appendix_table2_HAP1_A2A2['drop_in_KO'].map({True: 'True', False: 'False'})
-    appendix_table2_HAP1_A2A2.to_csv('../output/supp_tables/appendix_table2_HAP1_selftest_results.csv', index=True)
+    appendix_table2_HAP1_A2A2.to_csv('../output/appendix_tables/appendix_table2_HAP1_selftest_results.csv', index=True)
 
     # Process HAP1 paralog test results
     appendix_table3_HAP1_A1A2 = pd.read_csv('../output/output_HAP1/HAP1_paralogtest_results.csv', index_col=0)
@@ -56,7 +60,7 @@ def main():
     for col in ['compensation', 'collateral_loss']:
         if col in appendix_table3_HAP1_A1A2.columns:
             appendix_table3_HAP1_A1A2[col] = appendix_table3_HAP1_A1A2[col].map({True: 'True', False: 'False'})
-    appendix_table3_HAP1_A1A2.to_csv('../output/supp_tables/appendix_table3_HAP1_paralogtest_results.csv', index=True)
+    appendix_table3_HAP1_A1A2.to_csv('../output/appendix_tables/appendix_table3_HAP1_paralogtest_results.csv', index=True)
 
     # Process CPTAC self-test results
     appendix_table4_CPTAC_A2A2 = pd.read_csv('../output/output_CPTAC/prot/self_tests_prot.csv', index_col=0)
@@ -64,7 +68,7 @@ def main():
     # Ensure boolean columns stay as strings when saving
     if 'drop_when_lost' in appendix_table4_CPTAC_A2A2.columns:
         appendix_table4_CPTAC_A2A2['drop_when_lost'] = appendix_table4_CPTAC_A2A2['drop_when_lost'].map({True: 'True', False: 'False'})
-    appendix_table4_CPTAC_A2A2.to_csv('../output/supp_tables/appendix_table4_CPTAC_selftest_results.csv', index=True)
+    appendix_table4_CPTAC_A2A2.to_csv('../output/appendix_tables/appendix_table4_CPTAC_selftest_results.csv', index=True)
 
     # Process CPTAC proteomics paralog test results
     appendix_table5_CPTAC_A1A2 = pd.read_csv('../output/output_CPTAC/prot/paralog_tests_prot.csv', index_col=0)
@@ -74,7 +78,7 @@ def main():
     for col in ['compensation', 'collateral_loss']:
         if col in appendix_table5_CPTAC_A1A2.columns:
             appendix_table5_CPTAC_A1A2[col] = appendix_table5_CPTAC_A1A2[col].map({True: 'True', False: 'False'})
-    appendix_table5_CPTAC_A1A2.to_csv('../output/supp_tables/appendix_table5_CPTAC_proteomics_paralogtest_results.csv', index=True)
+    appendix_table5_CPTAC_A1A2.to_csv('../output/appendix_tables/appendix_table5_CPTAC_proteomics_paralogtest_results.csv', index=True)
 
     # Process transcriptomics and residual results
     trans_results = pd.read_csv('../output/output_CPTAC/trans/paralog_tests_trans.csv', index_col=0)
@@ -96,7 +100,7 @@ def main():
     appendix_table6_other2_datasets = pd.concat([trans_results, resid_results])
     appendix_table6_other2_datasets['gene_pair_tested_in_dataset'] = appendix_table6_other2_datasets['gene_pair'] + '_testedin_' + appendix_table6_other2_datasets['data_type']
     appendix_table6_other2_datasets = appendix_table6_other2_datasets.set_index('gene_pair_tested_in_dataset').reset_index()
-    appendix_table6_other2_datasets.to_csv('../output/supp_tables/appendix_table6_CPTAC_trans_and_resid_paralog_test_results.csv', index=True)
+    appendix_table6_other2_datasets.to_csv('../output/appendix_tables/appendix_table6_CPTAC_trans_and_resid_paralog_test_results.csv', index=True)
 
     # Process HAP1 biological annotations
     appendix_table7_HAP1_bioannots = pd.read_csv('../output/output_HAP1/HAP1_overlaps_categorical.csv', index_col=0).set_index('gene_pair').iloc[:, 10:].reset_index()
@@ -127,7 +131,7 @@ def main():
         if appendix_table7_HAP1_bioannots[col].dtype == bool:
             appendix_table7_HAP1_bioannots[col] = appendix_table7_HAP1_bioannots[col].map({True: 'True', False: 'False'})
     
-    appendix_table7_HAP1_bioannots.to_csv('../output/supp_tables/appendix_table7_allHAP1pairs_biological_info.csv')
+    appendix_table7_HAP1_bioannots.to_csv('../output/appendix_tables/appendix_table7_allHAP1pairs_biological_info.csv')
 
     # Process CPTAC biological annotations
     appendix_table8_CPTAC_bioannots = pd.read_csv('../output/output_CPTAC/prot/categorical_overlaps_prot.csv', index_col=0)
@@ -176,7 +180,7 @@ def main():
         if appendix_table8_CPTAC_bioannots[col].dtype == bool:
             appendix_table8_CPTAC_bioannots[col] = appendix_table8_CPTAC_bioannots[col].map({True: 'True', False: 'False'})
             
-    appendix_table8_CPTAC_bioannots.to_csv('../output/supp_tables/appendix_table8_allCPTACpairs_biological_info.csv')
+    appendix_table8_CPTAC_bioannots.to_csv('../output/appendix_tables/appendix_table8_allCPTACpairs_biological_info.csv')
 
     # Process CPTAC Fisher's Exact Test results
     appendix_table9_CPTAC_FET = pd.read_csv('../output/output_CPTAC/prot/categorical_FETs_uniquegenepairs_prot.csv', index_col=0)
@@ -192,16 +196,16 @@ def main():
     resid_FET['dataset'] = 'prot_residual'
 
     appendix_table9_CPTAC_FET = pd.concat([appendix_table9_CPTAC_FET, trans_FET, resid_FET])
-    appendix_table9_CPTAC_FET.to_csv('../output/supp_tables/appendix_table9_allCPTAC_categorical_overlaptests.csv', index=True)
+    appendix_table9_CPTAC_FET.to_csv('../output/appendix_tables/appendix_table9_allCPTAC_categorical_overlaptests.csv', index=True)
 
     # Process CPTAC t-test results
     appendix_table10_CPTAC_tt = pd.read_csv('../output/output_CPTAC/prot/quantitative_ttests_foroverlaps_prot.csv', index_col=0)
     appendix_table10_CPTAC_tt['dataset'] = 'proteomics'
     appendix_table10_CPTAC_tt = appendix_table10_CPTAC_tt.drop(columns='colname').set_index('Variable').reset_index().rename(columns={'Variable': 'variable'})
-    appendix_table10_CPTAC_tt.to_csv('../output/supp_tables/appendix_table10_allCPTAC_quantitative_overlaptests.csv', index=True)
+    appendix_table10_CPTAC_tt.to_csv('../output/appendix_tables/appendix_table10_allCPTAC_quantitative_overlaptests.csv', index=True)
     
-    # Create a multi-sheet Excel file
-    print('Creating multi-sheet Excel file...')
+    # Create individual Excel files for each dataset
+    print('Creating individual Excel files for each dataset...')
     
     # Load all tables
     tables = [
@@ -217,49 +221,49 @@ def main():
         appendix_table10_CPTAC_tt
     ]
     
-    # Create a new Excel workbook
-    wb = Workbook()
-    
-    # Create Introduction sheet
-    intro_sheet = wb.active
-    intro_sheet.title = "Introduction"
-    
-    # Add descriptions to Introduction sheet
-    for i, description in enumerate(table_descriptions, 1):
-        intro_sheet.cell(row=i, column=1, value=description)
-    
-    # Create sheets for each table
-    sheet_names = [
-        "Table S1",
-        "Table S2",
-        "Table S3",
-        "Table S4",
-        "Table S5",
-        "Table S6",
-        "Table S7",
-        "Table S8",
-        "Table S9",
-        "Table S10"
+    # Create and save individual files
+    file_names = [
+        "Dataset_EV1",
+        "Dataset_EV2",
+        "Dataset_EV3",
+        "Dataset_EV4",
+        "Dataset_EV5",
+        "Dataset_EV6", 
+        "Dataset_EV7",
+        "Dataset_EV8",
+        "Dataset_EV9",
+        "Dataset_EV10"
     ]
     
-    # Add tables to sheets
-    for i, (table, sheet_name) in enumerate(zip(tables, sheet_names)):
-        # Create new sheet
-        ws = wb.create_sheet(title=sheet_name)
+    # Add tables to individual files
+    for i, (table, file_name, description) in enumerate(zip(tables, file_names, table_descriptions)):
+        # Create new workbook
+        wb = Workbook()
         
+        # Create legend sheet
+        legend_sheet = wb.active
+        legend_sheet.title = "Legend"
+        legend_sheet.cell(row=1, column=1, value=description)
+        
+        # Create data sheet
+        data_sheet = wb.create_sheet(title="Data")
+        
+        # Convert boolean columns to strings
         for col in table.columns:
             if table[col].dtype == bool:
-                table[col] = table[col].map({True: 'True', False: 'False'}) # seems more readable than 0s and 1s
+                table[col] = table[col].map({True: 'True', False: 'False'})
                 
+        # Add data to data sheet
         for r_idx, row in enumerate(dataframe_to_rows(table, index=False, header=True), 1):
             for c_idx, value in enumerate(row, 1):
                 if isinstance(value, bool):
                     value = str(value)
-                ws.cell(row=r_idx, column=c_idx, value=value)
+                data_sheet.cell(row=r_idx, column=c_idx, value=value)
+        
+        # Save the workbook
+        wb.save(f'../output/EV_datasets/{file_name}.xlsx')
     
-    # Save the workbook
-    wb.save('../output/supp_tables/appendix_tables.xlsx')
-    print('Done! Excel file saved to ../output/supp_tables/appendix_tables.xlsx')
+    print('Done! All datasets saved to ../output/EV_datasets/')
 
 if __name__ == '__main__':
     main()
