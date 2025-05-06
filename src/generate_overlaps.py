@@ -452,14 +452,14 @@ def generate_overlaps(dfs_for_cat_overlap, dfs_for_quant_overlap, results, runwi
         all_upids = list(np.union1d(annotated_results['A1_uniprot'].to_list(), annotated_results['A2_uniprot'].to_list()))
 
         print("Checking for protein length data...")
-        #if True:
-        if not os.path.exists('../data/for_overlap/prot_lengths.csv'):
+        if True:
+        #if not os.path.exists('../data/for_overlap/prot_lengths.csv'):
             print("Fetching protein lengths from UniProt...")
             lengths = get_lengths(all_upids)
-            lengths.to_csv('../data/for_overlap/prot_lengths.csv')
-        else:
-            print("Loading protein lengths from file...")
-            lengths = pd.read_csv('../data/for_overlap/prot_lengths.csv')
+            lengths.to_csv('../data/for_overlap/prot_lengths.csv') # Uncomment below to save time: but UniProt IDs are different for HAP1 and CPTAC pairs so this is default to avoid errors
+        #else:
+        #    print("Loading protein lengths from file...")
+        #    lengths = pd.read_csv('../data/for_overlap/prot_lengths.csv')
             
         print("Mapping protein lengths...")
         lendict = lengths.set_index('uniprot_id').to_dict()['protein_length']
