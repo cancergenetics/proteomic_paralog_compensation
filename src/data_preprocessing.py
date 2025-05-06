@@ -32,6 +32,12 @@ def load_and_process_data(runwith='prot', nb_workers = 1, overlap_only=False):
             data_path = '../data/CPTAC/CPTAC_prot_residuals.csv'
             cn_path = '../data/CPTAC/CPTAC_gistic_cn.csv'
             sample_info_path = '../data/CPTAC/CPTAC_sampleinfo.csv'
+        elif runwith == 'brca':
+            data_path = '/home/administrator/cbioportal_UP_datasets/brca_UPonly_trimmed.csv'
+            cn_path = '/home/administrator/cbioportal_UP_datasets/brca_cn.csv'
+        elif runwith == 'ovca':
+            data_path = '/home/administrator/cbioportal_UP_datasets/ovca_UPonly_trimmed.csv'
+            cn_path = '/home/administrator/cbioportal_UP_datasets/ovca_cn.csv'
         
         print('Loading in sample info...')
         if runwith in ['brca', 'ovca']:
@@ -207,7 +213,7 @@ def load_and_process_data(runwith='prot', nb_workers = 1, overlap_only=False):
     gtex_data = gtex_data.reset_index()[['gene_name', 'mean']]
 
     dfs_for_quant_overlap = (string_physical, biogrid, conservation_scores, prot_hl, interface_df, gtex_data)
-    
+
     if overlap_only:
         return dfs_for_cat_overlap, dfs_for_quant_overlap
     else:
